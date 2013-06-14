@@ -59,3 +59,7 @@ function frame() {
         frame();
     });
 }
+
+function currentMs() {
+    return new Date().getTime();
+}

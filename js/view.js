@@ -53,6 +53,12 @@ ViewClass.prototype.drawCell = function(x, y, style) {
     this.rect(x * this.cellW, y * this.cellH, this.cellW, this.cellH, style);
 }
 
+// ViewClass.prototype.drawCell = function(x, y, margin, style) {
+//     var w = this.cellW - margin * 2;
+//     var h = this.cellH - margin * 2;
+//     this.rect(x * this.cellW + margin, y * this.cellH + margin, w, h, style);
+// }
+
 ViewClass.prototype.drawCellRhombus = function(x, y, margin, style) {
     var ctx = this._ctx;
     var l   = this.cellW * x + margin;
