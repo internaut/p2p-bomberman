@@ -38,6 +38,9 @@ function loadClasses() {
     player.setup(view);
     controls.setup(player);
 
+    var playerStart = map.spawnPoints[0];
+    player.set(playerStart[0], playerStart[1]);
+
     view.addEntity(map);
     view.addEntity(player);
 

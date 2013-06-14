@@ -31,21 +31,6 @@ BombClass.prototype.draw = function() {
 
     	var progrPerc = progress / this._explMaxMs;
 
-    	// explode in 4 directions
-    	// var dx, dy;
-    	// for (var d = 0; d < 4; d++) {
-    	// 	switch(d) {
-    	// 		case 0:
-    	// 			dx = 0;
-    	// 			dy = -1;
-    	// 		break;
-    	// 		case 1:
-    	// 			dx = 1;
-    	// 			dy = -1;
-    	// 		break;
-    	// 	}
-    	// }
-
     	for (var dy = -1; dy <= 1; dy++) {
     		for (var dx = -1; dx <= 1; dx++) {
     			if (dx == 0 && dy == 0) continue;				// no explosion on own field
