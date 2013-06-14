@@ -34,7 +34,7 @@ MapClass.prototype.draw = function() {
 	for (var y = 0; y < h; y++) {
 		for (var x = 0; x < w; x++) {
 			var cellType = MapData[y * w + x];
-			if (cellType != ' ') {
+			if (cellType != ' ' && cellType != 'P') {
 				this._view.drawCell(x, y, MapColors[cellType]);
 			}
 		}

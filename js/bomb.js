@@ -48,7 +48,7 @@ BombClass.prototype.draw = function() {
 
     	for (var dy = -1; dy <= 1; dy++) {
     		for (var dx = -1; dx <= 1; dx++) {
-    			// if (dx == 0 && dy == 0) continue;				// no explosion on own field
+    			if (dx == 0 && dy == 0) continue;				// no explosion on own field
     			if (Math.abs(dx) + Math.abs(dy) == 2) continue;		// no explosion on diagonal fields
     			if (this._explDirectionIsBlocked(dx, dy)) continue;	// no explosion in blocked directions
 
@@ -60,6 +60,7 @@ BombClass.prototype.draw = function() {
     				|| posY < 0 || posY >= MapDimensions.h)	continue;
 
     			if (cellType === 'X') {	// blocked!
+    				// console.log('added blocked dir ' + dx + ', ' + dy);
     				this._explBlocked.push(new Array(dx, dy));
     				continue;
     			}
@@ -114,9 +115,10 @@ BombClass.prototype.stopExplosion = function() {
 
 BombClass.prototype._explDirectionIsBlocked = function(dx, dy) {
 	if (this._explBlocked.length > 0) {
-		for (var b = 0; b < this._explBlocked; b++) {
-			var blockedCell = this._explBlocked[b];
-			if (blockedCell[0] === dx && blockedCell[1] === dy) {
+		for (var b = 0; b < this._explBlocked.length; b++) {
+			var blockedCellDir = this._explBlocked[b];
+			// console.log('blocked dir is ' + dx + ', ' + dy);
+			if (blockedCellDir[0] == dx && blockedCellDir[1] == dy) {
 				return true;
 			}
 		}

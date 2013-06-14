@@ -4,7 +4,7 @@ PlayerClass.constructor = PlayerClass;
 function PlayerClass() {
     this._margin = 5;
     this._color = 'green';
-    
+
     this.bombStrength = 2;
 }
 
@@ -19,7 +19,9 @@ PlayerClass.prototype.moveBy = function(dX, dY) {
     if (destX < 0 || destX >= MapDimensions.w) destX = this.x;
     if (destY < 0 || destY >= MapDimensions.h) destY = this.y;
 
-    this.set(destX, destY);
+    if (mapCellIsFree(destX, destY)) {
+        this.set(destX, destY);
+    }
 }
 
 PlayerClass.prototype.dropBomb = function() {
