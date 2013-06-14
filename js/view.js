@@ -24,6 +24,10 @@ ViewClass.prototype.setup = function(rows, cols) {
 }
 
 ViewClass.prototype.addEntity = function(e) {
+    for (var i = 0; i < this._entities.length; i++) {   // check if we already have this entity
+        if (this._entities[i] === e) return;
+    }
+
     this._entities.push(e);
 }
 
@@ -39,6 +43,16 @@ ViewClass.prototype.addEntityBeforeEntity = function(e, o) {
 
     // if we didn't find 'o', add it to the end:
     this.addEntity(e);
+}
+
+ViewClass.prototype.removeEntity = function(e) {
+    for (var i = 0; i < this._entities.length; i++) {
+        if (this._entities[i] === e) {
+            this._entities.splice(i, 1);
+
+            return;
+        }
+    }
 }
 
 ViewClass.prototype.update = function() {

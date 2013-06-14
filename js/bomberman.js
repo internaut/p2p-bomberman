@@ -33,7 +33,7 @@ function loadClasses() {
     player = new PlayerClass();
     controls = new ControlsClass();
 
-    view.setup(map.w, map.h);
+    view.setup(MapDimensions.w, MapDimensions.h);
     map.setup(view);
     player.setup(view);
     controls.setup(player);
