@@ -2,8 +2,7 @@ function ViewClass() {
     this._canvas = document.getElementById('canvas');
     this._ctx = this._canvas.getContext('2d');
 
-    this._elems = new Array();
-    this._isUpdating = false;
+    this._entities = new Array();
 
     this.w = this._canvas.width;
     this.h = this._canvas.height;
@@ -24,22 +23,58 @@ ViewClass.prototype.setup = function(rows, cols) {
     console.log('Drawing ' + this.cols + ' x ' + this.rows + ' grid with cells size ' + this.cellW + ' x ' + this.cellH);
 }
 
-ViewClass.prototype.addElement = function(elem) {
-    this._elems.push(elem);
+ViewClass.prototype.addEntity = function(e) {
+    this._entities.push(e);
+}
+
+ViewClass.prototype.addEntityBeforeEntity = function(e, o) {
+    for (var i = 0; i < this._entities.length; i++) {
+        var curE = this._entities[i];
+        if (curE === o) {
+            this._entities.splice(i, 0, e);
+
+            return;
+        }
+    }
+
+    // if we didn't find 'o', add it to the end:
+    this.addEntity(e);
 }
 
 ViewClass.prototype.update = function() {
-    if (this._isUpdating === true) return;
+    this._ctx.clearRect(0, 0, this.w, this.h);
 
-    this._isUpdating = true;
-    for (var i = 0; i < this._elems.length; i++) {
-        this._elems[i].draw();
+    for (var i = 0; i < this._entities.length; i++) {
+        this._entities[i].draw();
     }
-    this._isUpdating = false;
 }
 
 ViewClass.prototype.drawCell = function(x, y, style) {
     this.rect(x * this.cellW, y * this.cellH, this.cellW, this.cellH, style);
+}
+
+ViewClass.prototype.drawCellRhombus = function(x, y, margin, style) {
+    var ctx = this._ctx;
+    var l   = this.cellW * x + margin;
+    var r   = l + this.cellW - 2 * margin;
+    var hM  = l + this.cellW_2 - margin;
+    var t   = this.cellH * y + margin;
+    var b   = t + this.cellH - 2 * margin;
+    var vM  = t + this.cellW_2 - margin;
+
+    ctx.beginPath();
+    ctx.moveTo(hM, t);
+    ctx.lineTo(r, vM);
+    ctx.lineTo(hM, b);
+    ctx.lineTo(l, vM);
+    ctx.closePath();
+
+    ctx.fillStyle = style;
+    ctx.fill();
+
+    // ctx.strokeStyle = 'green';
+    // ctx.lineWidth = 1.0;
+    // ctx.stroke();
 }
 
 ViewClass.prototype.drawCellCircle = function(x, y, margin, style) {
@@ -62,3 +97,13 @@ ViewClass.prototype.circle = function(x, y, d, style) {
     ctx.fill();
 }
 
+ViewClass.prototype.line = function(x1, y1, x2, y2, style) {
+    var ctx = this._ctx;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = style;
+    ctx.lineWidth = 1.0;
+    ctx.stroke();
+}

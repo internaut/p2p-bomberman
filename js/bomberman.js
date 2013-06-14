@@ -1,5 +1,7 @@
-var jsIncludes = new Array('map.js', 'view.js', 'player.js', 'controls.js');
+var jsIncludes = new Array('view.js', 'entity.js', 'map.js', 'player.js', 'bomb.js', 'controls.js');
 var view;
+var updateLoop;
+var framerate = 60.0;
 
 function init() {
     console.log('Loading js includes...');
@@ -36,8 +38,24 @@ function loadClasses() {
     player.setup(view);
     controls.setup(player);
 
-    view.addElement(map);
-    view.addElement(player);
+    view.addEntity(map);
+    view.addEntity(player);
 
+    window.requestAnimFrame = (function(callback) {
+        return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame ||
+        function(callback) {
+          window.setTimeout(callback, 1000 / framerate);
+        };
+    })();
+
+    frame();
+}
+
+function frame() {
     view.update();
+
+    // request new frame
+    requestAnimFrame(function() {
+        frame();
+    });
 }

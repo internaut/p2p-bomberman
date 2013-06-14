@@ -1,27 +1,15 @@
+PlayerClass.prototype = new EntityClass();
+PlayerClass.constructor = PlayerClass;
+
 function PlayerClass() {
-    this.x = 0;
-    this.y = 0;
-    this._view = null;
     this._margin = 5;
     this._color = 'green';
-}
-
-PlayerClass.prototype.setup = function(viewRef) {
-    this._view = viewRef;
-}
-
-PlayerClass.prototype.set = function(x, y) {
-    this.x = x;
-    this.y = y;
+    
+    this.bombStrength = 2;
 }
 
 PlayerClass.prototype.draw = function() {
-    // console.log('Drawing player at ' + this.x + ', ' + this.y);
-    this._view.drawCellCircle(this.x, this.y, this._margin, this._color);
-}
-
-PlayerClass.prototype.moveTo = function(x, y) {
-
+    this._view.drawCellRhombus(this.x, this.y, this._margin, this._color);
 }
 
 PlayerClass.prototype.moveBy = function(dX, dY) {
@@ -32,6 +20,10 @@ PlayerClass.prototype.moveBy = function(dX, dY) {
     if (destY < 0 || destY >= MapDimensions.h) destY = this.y;
 
     this.set(destX, destY);
+}
 
-    this._view.update();
+PlayerClass.prototype.dropBomb = function() {
+    var bomb = new BombClass();
+    bomb.setup(this._view);
+    bomb.dropByPlayer(this);
 }
