@@ -30,6 +30,8 @@ BombClass.prototype.draw = function() {
     		this._explWave++;
     	}
 
+    	var progrPerc = progress / this._explMaxMs;
+
     	// explode in 4 directions
     	for (var dy = -1; dy <= 1; dy++) {
     		for (var dx = -1; dx <= 1; dx++) {
@@ -39,8 +41,11 @@ BombClass.prototype.draw = function() {
     			var posX = this.x + dx * this._explWave;
     			var posY = this.y + dy * this._explWave;
     			console.log('drawing explosion in cell ' + posX + ', ' + posY);
-    			style = 'rgba(255, 0, 0, 127)';
-    			this._view.drawCell(posX, posY, 'yellow');
+    			var colorR = 255 - progrPerc * 100;
+    			var colorG = 30 + progrPerc * 127;
+    			var colorA = 1.0 - progrPerc;
+    			style = 'rgba(' + colorR.toFixed() + ', ' + colorG.toFixed() + ', 0, ' + colorA.toFixed() + ')';
+    			this._view.drawCell(posX, posY, style);
     		}
     	}
     }
