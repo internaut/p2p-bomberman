@@ -1,4 +1,15 @@
-var jsIncludes = new Array('view.js', 'entity.js', 'map.js', 'player.js', 'bomb.js', 'controls.js');
+var jsIncludes = new Array(
+    'helper.js',
+    'game.js',
+    'view.js',
+    'entity.js',
+    'map.js',
+    'player.js',
+    'player_manager.js',
+    'bomb.js',
+    'controls.js'
+);
+
 var view;
 var updateLoop;
 var framerate = 60.0;
@@ -17,8 +28,9 @@ function init() {
 
         script.onload = function () {
             numComplete++;
+            console.log('numComplete ' + numComplete + ' / ' + jsIncludes.length);
             if (numComplete == jsIncludes.length) {
-                loadClasses();
+                loadGame();
             }
         }
 
@@ -26,43 +38,10 @@ function init() {
     }
 }
 
-function loadClasses() {
-    console.log('Loading js classes...');
-    view = new ViewClass();
-    map = new MapClass();
-    player = new PlayerClass();
-    controls = new ControlsClass();
+function loadGame() {
+    console.log('Loading game...');
 
-    view.setup(MapDimensions.w, MapDimensions.h);
-    map.setup(view);
-    player.setup(view);
-    controls.setup(player);
-
-    var playerStart = map.spawnPoints[0];
-    player.set(playerStart[0], playerStart[1]);
-
-    view.addEntity(map);
-    view.addEntity(player);
-
-    window.requestAnimFrame = (function(callback) {
-        return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame ||
-        function(callback) {
-          window.setTimeout(callback, 1000 / framerate);
-        };
-    })();
-
-    frame();
-}
-
-function frame() {
-    view.update();
-
-    // request new frame
-    requestAnimFrame(function() {
-        frame();
-    });
-}
-
-function currentMs() {
-    return new Date().getTime();
+    game = new GameClass(GameModeSinglePlayer);
+    game.setup();
+    game.startGame();
 }

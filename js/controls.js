@@ -2,14 +2,14 @@ function ControlsClass() {
 	this._player = null;
 }
 
-ControlsClass.prototype.setup = function(playerRef) {
+ControlsClass.prototype.setup = function(playerRef, keyConf) {
     this._player = playerRef;
 
-    $(document).bind('keydown', 'left', 	function() { this.moveLeft(); 	}.bind(this));
-    $(document).bind('keydown', 'right',	function() { this.moveRight(); 	}.bind(this));
-    $(document).bind('keydown', 'up', 		function() { this.moveUp(); 	}.bind(this));
-    $(document).bind('keydown', 'down', 	function() { this.moveDown(); 	}.bind(this));
-    $(document).bind('keydown', 'b', 		function() { this.dropBomb(); 	}.bind(this));
+    $(document).bind('keydown', keyConf[0], function() { this.moveLeft(); 	}.bind(this));
+    $(document).bind('keydown', keyConf[1],	function() { this.moveRight(); 	}.bind(this));
+    $(document).bind('keydown', keyConf[2], function() { this.moveUp(); 	}.bind(this));
+    $(document).bind('keydown', keyConf[3], function() { this.moveDown(); 	}.bind(this));
+    $(document).bind('keydown', keyConf[4], function() { this.dropBomb(); 	}.bind(this));
 }
 
 ControlsClass.prototype.moveLeft = function() {

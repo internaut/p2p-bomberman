@@ -26,14 +26,18 @@ function MapClass() {
 	var w = MapDimensions.w;
 	var h = MapDimensions.h;
 	
-	this.spawnPoints = new Array();
+	this._spawnPoints = new Array();
 	for (var y = 0; y < h; y++) {
 		for (var x = 0; x < w; x++) {
 			if (MapData[y * w + x] === 'P') {
-				this.spawnPoints.push(new Array(x, y));
+				this._spawnPoints.push(new Array(x, y));
 			}
 		}
 	}
+}
+
+MapClass.prototype.getSpawnPoints = function() {
+	return this._spawnPoints;
 }
 
 MapClass.prototype.draw = function() {
