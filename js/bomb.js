@@ -1,4 +1,5 @@
 BombClass.prototype = new EntityClass();
+BombClass.prototype.parent = EntityClass.prototype;
 BombClass.constructor = BombClass;
 
 function BombClass() {
@@ -8,12 +9,19 @@ function BombClass() {
     this._owner = null;
     this._timerMs = 2000;
     this._strength = 0;
+    this._playerManager = null;
 
     this._exploding 	= false;
     this._explBlocked	= null;	// blocked explosion directions
     this._explWave 		= 0;
     this._explStartMs 	= 0;	// per wave
     this._explMaxMs		= 500;	// per wave
+}
+
+BombClass.prototype.setup = function(viewRef, playerManagerRef) {
+    this.parent.setup.call(this, viewRef);   // parent call
+
+    this._playerManager = playerManagerRef;
 }
 
 BombClass.prototype.draw = function() {
@@ -33,16 +41,24 @@ BombClass.prototype.draw = function() {
 
     	for (var dy = -1; dy <= 1; dy++) {
     		for (var dx = -1; dx <= 1; dx++) {
-    			if (dx == 0 && dy == 0) continue;				// no explosion on own field
     			if (Math.abs(dx) + Math.abs(dy) == 2) continue;		// no explosion on diagonal fields
     			if (this._explDirectionIsBlocked(dx, dy)) continue;	// no explosion in blocked directions
 
-    			var posX = this.x + dx * this._explWave;
-    			var posY = this.y + dy * this._explWave;
-    			var cellType = mapCellType(posX, posY);
+                // calculate position of the explosion wave field
+                var posX = this.x + dx * this._explWave;
+                var posY = this.y + dy * this._explWave;
 
-    			if (posX < 0 || posX >= MapDimensions.w 
-    				|| posY < 0 || posY >= MapDimensions.h)	continue;
+                // check limits
+                if (posX < 0 || posX >= MapDimensions.w 
+                    || posY < 0 || posY >= MapDimensions.h) continue;
+
+                // check if we hit a player
+                this._checkPlayerHits(posX, posY);
+
+                if (dx == 0 && dy == 0) continue;               // no explosion on own field
+
+                // get the cell type of this field
+    			var cellType = mapCellType(posX, posY);
 
     			if (cellType === 'X') {	// blocked!
     				// console.log('added blocked dir ' + dx + ', ' + dy);
@@ -110,4 +126,19 @@ BombClass.prototype._explDirectionIsBlocked = function(dx, dy) {
 	}
 
 	return false;
+}
+
+/**
+ *  Check if a player was hit on explosion field at position ex, ey
+ */
+BombClass.prototype._checkPlayerHits = function(ex, ey) {
+    var players = this._playerManager.getPlayers();
+
+    for (var i = 0; i < players.length; i++) {
+        var player = players[i];
+        if (player.getAlive() === true && player.x === ex && player.y === ey) {
+            player.setAlive(false);
+            this._playerManager.checkGameStatus();
+        }
+    }
 }

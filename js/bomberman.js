@@ -10,7 +10,7 @@ var jsIncludes = new Array(
     'controls.js'
 );
 
-var view;
+var game;
 var updateLoop;
 var framerate = 60.0;
 
@@ -28,7 +28,7 @@ function init() {
 
         script.onload = function () {
             numComplete++;
-            console.log('numComplete ' + numComplete + ' / ' + jsIncludes.length);
+
             if (numComplete == jsIncludes.length) {
                 loadGame();
             }

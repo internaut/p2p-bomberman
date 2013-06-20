@@ -28,15 +28,16 @@ PlayerManagerClass.prototype.removePlayer = function(p) {
     return false;
 }
 
-// PlayerManagerClass.prototype.killPlayer = function(p, respawnAfterMs) {
-//     if (!p.getAlive()) return;
+PlayerManagerClass.prototype.checkGameStatus = function() {
+    var numAlive = 0;
+    for (var i = 0; i < this._players.length; i++) {
+        if (this._players[i].getAlive() === true) numAlive++;
+    }
 
-//     p.setAlive(false);
-
-//     if (respawnAfterMs > 0) {
-//         window.setTimeout(function() { this.respawnPlayer(p); }.bind(this), respawnAfterMs);
-//     }
-// }
+    if (numAlive === 0) {
+        game.roundEnded();
+    }
+}
 
 PlayerManagerClass.prototype.spawnAllPlayers = function() {
     var spawnPoints = this._map.getSpawnPoints().slice();

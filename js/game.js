@@ -27,7 +27,7 @@ GameClass.prototype.startGame = function() {
 
 	if (this._mode === GameModeSinglePlayer) {
 		var player1 = new PlayerClass(PlayerTypeLocalKeyboardArrows);
-		player1.setup(this._view);
+		player1.setup(this._view, this._playerManager);
 		this._view.addEntity(player1);
 		this._playerManager.addPlayer(player1);
 		var player1Controls = new ControlsClass();
@@ -39,7 +39,7 @@ GameClass.prototype.startGame = function() {
 		this._controls.push(player1Controls);
 
 		var player2 = new PlayerClass(PlayerTypeLocalKeyboardWSAD);
-		player2.setup(this._view);
+		player2.setup(this._view, this._playerManager);
 		this._view.addEntity(player2);
 		this._playerManager.addPlayer(player2);
 
@@ -59,6 +59,10 @@ GameClass.prototype.startGame = function() {
 
 GameClass.prototype.stopGame = function() {
 
+}
+
+GameClass.prototype.roundEnded = function() {
+	console.log('round ended');
 }
 
 GameClass.prototype.frame = function() {
