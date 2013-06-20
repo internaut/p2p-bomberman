@@ -1,3 +1,12 @@
+/**
+ * P2P-Bomberman main file.
+ * Should be included in HTML file. Will load all other sources and
+ * start up all stuff.
+ *
+ * Author: Markus Konrad <post@mkonrad.net>
+ */
+
+// All source files:
 var jsIncludes = new Array(
     'helper.js',
     'game.js',
@@ -10,14 +19,19 @@ var jsIncludes = new Array(
     'controls.js'
 );
 
+// Main variables
 var game;
 var updateLoop;
 var framerate = 60.0;
 
+/**
+ * Bomberman initialization. Call this in <body onload=...>
+ */
 function init() {
     console.log('Loading js includes...');
     var head = document.getElementsByTagName('head')[0];
 
+    // load all the sources
     for (var i = 0; i < jsIncludes.length; i++) {
         var jsFile = jsIncludes[i];
         var script = document.createElement('script');
@@ -38,6 +52,9 @@ function init() {
     }
 }
 
+/**
+ *  Load the game itself.
+ */
 function loadGame() {
     console.log('Loading game...');
 
