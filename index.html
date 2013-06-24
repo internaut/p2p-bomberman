@@ -10,15 +10,38 @@
 <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT">
 <meta http-equiv="pragma" content="no-cache">
 
-<script type="text/javascript" src="js/lib/jquery-2.0.2.min.js"></script>
-<script type="text/javascript" src="js/lib/jquery.hotkeys.js"></script>
-<script type="text/javascript" src="js/bomberman.js"></script>
+<link rel="stylesheet" type="text/css" href="css/bomberman.css">
 
 </head> 
  
-<body onload="init()" style="background-color:black"> 
+<body> 
 
-<canvas style="border: 1px solid white" id="canvas" width="640" height="640"></canvas>
+<h1>Peer to Peer Bomberman</h1>
+
+<div id="main">
+
+<form id="start_game_form" action="lounge.html" method="GET">
+	<div id="new_game" class="option">
+		<h2>New Game</h2>
+
+		<select name="mode">
+			<option value="0">Singleplayer</option>
+			<option value="1">Multiplayer (P2P)</option>
+		</select>
+	</div>
+	<div id="or" class="option">
+		- OR -
+	</div>
+	<div id="new_game" class="option">
+		<h2>Join Game</h2>
+		<label for="game_id">Game ID:</label> <input id="game_id" name="game_id" type="text" value="">
+	</div>
+	<div id="start_game_form_button">
+		<input type="submit" value="Let's go!">
+	</div>
+</form>
+
+</div>
 
 </body> 
 
