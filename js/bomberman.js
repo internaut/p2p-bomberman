@@ -7,18 +7,25 @@
  */
 
 // All source files:
-var jsIncludes = new Array(
-    'conf.js',
-    'helper.js',
-    'game.js',
-    'view.js',
-    'entity.js',
-    'map.js',
-    'player.js',
-    'player_manager.js',
-    'bomb.js',
-    'controls.js'
-);
+var jsIncludes = {
+    common: new Array(
+        'conf.js',
+        'helper.js',
+        'game.js'
+    ),
+    lounge: new Array(
+
+    ),
+    game: new Array(
+        'view.js',
+        'entity.js',
+        'map.js',
+        'player.js',
+        'player_manager.js',
+        'bomb.js',
+        'controls.js'
+    ),
+}
 
 // Main variables
 var game;
@@ -26,31 +33,58 @@ var updateLoop;
 var framerate = 60.0;
 
 /**
- * Bomberman initialization. Call this in <body onload=...>
+ * Bomberman initialization. Call this in <body onload=...>.
+ * Can load different modules with <module>: 'lounge' or 'game'.
  */
-function init() {
-    console.log('Loading js includes...');
+function init(module) {
+    console.log('Loading js includes for module ' + module + '...');
+
+    // load common js files
+    loadJsSources(jsIncludes.common, null);
+
+    // load special modules
+    if (module === 'lounge') {
+        loadJsSources(jsIncludes.lounge, loadLounge);
+    } else if (module === 'game') {
+        loadJsSources(jsIncludes.game, loadGame);
+    }
+}
+
+/**
+ * Load javascript source files from an array <sources>.
+ */
+function loadJsSources(sources, readyFunc) {
     var head = document.getElementsByTagName('head')[0];
 
     // load all the sources
-    for (var i = 0; i < jsIncludes.length; i++) {
-        var jsFile = jsIncludes[i];
+    for (var i = 0; i < sources.length; i++) {
+        var jsFile = sources[i];
         var script = document.createElement('script');
         var numComplete = 0;
         script.type = 'text/javascript';
         script.src = 'js/' + jsFile;
         console.log('Loading script ' + script.src);
 
-        script.onload = function () {
-            numComplete++;
+        if (readyFunc !== null) {
+            script.onload = function() {
+                numComplete++;
 
-            if (numComplete == jsIncludes.length) {
-                loadGame();
-            }
+                if (numComplete == sources.length) {
+                    readyFunc();
+                }
+            }.bind(readyFunc);
         }
 
         head.appendChild(script);
     }
+}
+
+
+/**
+ *  Load the lounge.
+ */
+function loadLounge() {
+    console.log('Loading lounge...');
 }
 
 /**
@@ -63,3 +97,4 @@ function loadGame() {
     game.setup();
     game.startGame();
 }
+

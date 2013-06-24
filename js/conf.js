@@ -7,6 +7,6 @@
 var Conf = {
 	maxBombStrength: 5,
 	bombTimerMs: 2000,
-	moveKeyRepeatTimeMs: 250,
+	moveKeyRepeatTimeMs: 100,
 	bombKeyRepeatTimeMs: 500
 };
