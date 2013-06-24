@@ -1,3 +1,14 @@
+/**
+ * P2P-Bomberman bomb entity.
+ * Implementation of a bomberman's bomb. It can explode and will show an
+ * explosion animation.
+ *
+ * Author: Markus Konrad <post@mkonrad.net>
+ */
+
+/**
+ * Inherit from EntityClass.
+ */
 BombClass.prototype = new EntityClass();
 BombClass.prototype.parent = EntityClass.prototype;
 BombClass.constructor = BombClass;
@@ -6,24 +17,30 @@ function BombClass() {
     this._initialMargin = 25;
     this._finalMargin = 5;
     this._color = 'red';
-    this._owner = null;
-    this._timerMs = 2000;
-    this._strength = 0;
-    this._playerManager = null;
+    this._owner = null;         // ref. to a PlayerClass
+    this._timerMs = 2000;       // bomb timer
+    this._strength = 0;         // bomb strength in cells
+    this._playerManager = null; // ref. to PlayerManagerClass
 
-    this._exploding 	= false;
+    this._exploding 	= false;// is true while explosion animation is running
     this._explBlocked	= null;	// blocked explosion directions
-    this._explWave 		= 0;
+    this._explWave 		= 0;    // current explosion wave radius
     this._explStartMs 	= 0;	// per wave
     this._explMaxMs		= 500;	// per wave
 }
 
+/**
+ * Setup a bomb and set the view and player manager references.
+ */
 BombClass.prototype.setup = function(viewRef, playerManagerRef) {
     this.parent.setup.call(this, viewRef);   // parent call
 
     this._playerManager = playerManagerRef;
 }
 
+/**
+ * Draw a bomb or a explosion animation
+ */
 BombClass.prototype.draw = function() {
     if (this._exploding) {	// draw the explosion animation
     	var progress = currentMs() - this._explStartMs;
@@ -83,15 +100,21 @@ BombClass.prototype.draw = function() {
     }
 }
 
+/**
+ * Drop a bomb. <player> is the owner of the bomb.
+ */
 BombClass.prototype.dropByPlayer = function(player) {
 	this._owner = player;
-	this._strength = this._owner.bombStrength;
+	this._strength = this._owner.getBombStrength();
 	this.set(this._owner.x, this._owner.y);
 	this._view.addEntityBeforeEntity(this, this._owner);
 
 	window.setTimeout(function() { this.explode(); }.bind(this), this._timerMs);
 }
 
+/**
+ * Let the bomb explode.
+ */
 BombClass.prototype.explode = function() {
 	if (this._strength == 0) return;
 
@@ -103,6 +126,9 @@ BombClass.prototype.explode = function() {
 	this._explBlocked	= new Array();
 }
 
+/**
+ * After the eplosion animation this function will be called.
+ */
 BombClass.prototype.stopExplosion = function() {
 	console.log('BUFF!');
 
@@ -114,6 +140,10 @@ BombClass.prototype.stopExplosion = function() {
     this._view.removeEntity(this);
 }
 
+/**
+ * Private method to check if an explosion direction in the direction
+ * of <dx>, <dy> is blocked.
+ */
 BombClass.prototype._explDirectionIsBlocked = function(dx, dy) {
 	if (this._explBlocked.length > 0) {
 		for (var b = 0; b < this._explBlocked.length; b++) {
@@ -138,6 +168,7 @@ BombClass.prototype._checkPlayerHits = function(ex, ey) {
         var player = players[i];
         if (player.getAlive() === true && player.x === ex && player.y === ey) {
             player.setAlive(false);
+            this._owner.increaseBombStrength();
             this._playerManager.checkGameStatus();
         }
     }

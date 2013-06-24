@@ -8,6 +8,7 @@
 
 // All source files:
 var jsIncludes = new Array(
+    'conf.js',
     'helper.js',
     'game.js',
     'view.js',
