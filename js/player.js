@@ -124,7 +124,7 @@ PlayerClass.prototype.moveBy = function(dX, dY) {
  * Drop a bomb.
  */
 PlayerClass.prototype.dropBomb = function() {
-    if (!this._alive) return;
+    if (!this._alive || mapCellType(this.x, this.y) === 'B') return;
 
     var bomb = new BombClass();
     bomb.setup(this._view, this._playerManager);

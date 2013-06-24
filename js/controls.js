@@ -9,7 +9,9 @@
  * Game controls constructor.
  */
 function ControlsClass() {
-	this._player = null;	// referenced (controlled) PlayerClass object.
+	this._player = null;		// referenced (controlled) PlayerClass object.
+	this._lastBombKeyUsage = 0;	// ms of last bomb key usage
+	this._lastMoveKeyUsage = 0;	// ms of last move key usage
 }
 
 /**
@@ -30,6 +32,9 @@ ControlsClass.prototype.setup = function(playerRef, keyConf) {
  * Move player left.
  */
 ControlsClass.prototype.moveLeft = function() {
+	if (currentMs() - this._lastMoveKeyUsage < Conf.moveKeyRepeatTimeMs) return;
+	this._lastMoveKeyUsage = currentMs();
+	
 	this._player.moveBy(-1, 0);
 }
 
@@ -37,6 +42,9 @@ ControlsClass.prototype.moveLeft = function() {
  * Move player right.
  */
 ControlsClass.prototype.moveRight = function() {
+	if (currentMs() - this._lastMoveKeyUsage < Conf.moveKeyRepeatTimeMs) return;
+	this._lastMoveKeyUsage = currentMs();
+
 	this._player.moveBy(1, 0);
 }
 
@@ -44,6 +52,9 @@ ControlsClass.prototype.moveRight = function() {
  * Move player up.
  */
 ControlsClass.prototype.moveUp = function() {
+	if (currentMs() - this._lastMoveKeyUsage < Conf.moveKeyRepeatTimeMs) return;
+	this._lastMoveKeyUsage = currentMs();
+
 	this._player.moveBy(0, -1);
 }
 
@@ -51,6 +62,9 @@ ControlsClass.prototype.moveUp = function() {
  * Move player down.
  */
 ControlsClass.prototype.moveDown = function() {
+	if (currentMs() - this._lastMoveKeyUsage < Conf.moveKeyRepeatTimeMs) return;
+	this._lastMoveKeyUsage = currentMs();
+
 	this._player.moveBy(0, 1);
 }
 
@@ -58,5 +72,8 @@ ControlsClass.prototype.moveDown = function() {
  * Let the player drop a bomb.
  */
 ControlsClass.prototype.dropBomb = function() {
+	if (currentMs() - this._lastBombKeyUsage < Conf.bombKeyRepeatTimeMs) return;
+	this._lastBombKeyUsage = currentMs();
+
 	this._player.dropBomb();
 }

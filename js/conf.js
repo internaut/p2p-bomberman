@@ -5,5 +5,8 @@
  */
 
 var Conf = {
-	maxBombStrength: 5 
+	maxBombStrength: 5,
+	bombTimerMs: 2000,
+	moveKeyRepeatTimeMs: 250,
+	bombKeyRepeatTimeMs: 500
 };

@@ -18,7 +18,7 @@ function BombClass() {
     this._finalMargin = 5;
     this._color = 'red';
     this._owner = null;         // ref. to a PlayerClass
-    this._timerMs = 2000;       // bomb timer
+    this._timerMs = Conf.bombTimerMs;       // bomb timer
     this._strength = 0;         // bomb strength in cells
     this._playerManager = null; // ref. to PlayerManagerClass
 
@@ -105,8 +105,15 @@ BombClass.prototype.draw = function() {
  */
 BombClass.prototype.dropByPlayer = function(player) {
 	this._owner = player;
+
+    var x = this._owner.x;
+    var y = this._owner.y;
+
 	this._strength = this._owner.getBombStrength();
-	this.set(this._owner.x, this._owner.y);
+
+    mapCellSet(x, y, 'B');  // set this cell to 'occupied by a bomb'
+
+	this.set(x, y);
 	this._view.addEntityBeforeEntity(this, this._owner);
 
 	window.setTimeout(function() { this.explode(); }.bind(this), this._timerMs);
@@ -135,6 +142,9 @@ BombClass.prototype.stopExplosion = function() {
     this._exploding 	= false;
     this._explWave 		= 0;
     this._explStartMs 	= 0;
+
+    // set to free cell
+    mapCellSet(this.x, this.y, ' ');
 
     // remove me
     this._view.removeEntity(this);

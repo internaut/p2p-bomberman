@@ -13,6 +13,7 @@ MapColors['X'] = 'darkgrey';	// indistructable cell
 MapColors['x'] = 'white';		// distructable cell
 MapColors[' '] = 'black';		// free cell
 MapColors['P'] = 'red';			// player spawn point
+								// additional type: 'B' for bomb
 
 var MapGridColor = 'grey';			// grid line color
 
@@ -52,7 +53,7 @@ function mapCellType(x, y) {
  */
 function mapCellIsFree(x, y) {
 	var t = mapCellType(x, y);
-	return (t === ' ' || t === 'P');
+	return (t === ' ' || t === 'P' || t === 'B');
 }
 
 /**
@@ -104,7 +105,7 @@ MapClass.prototype.draw = function() {
 	for (var y = 0; y < h; y++) {
 		for (var x = 0; x < w; x++) {
 			var cellType = MapData[y * w + x];
-			if (cellType != ' ' && cellType != 'P') {
+			if (cellType != ' ' && cellType != 'P' && cellType != 'B') {
 				this._view.drawCell(x, y, MapColors[cellType]);
 			}
 		}
