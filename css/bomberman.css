@@ -55,4 +55,9 @@ h1 {
 
 #playerlist {
 	float: left;
+	display: none;
+}
+
+#multiplayer_conf, #singleplayer_conf {
+	display: none;
 }

@@ -36,3 +36,16 @@ window.requestAnimFrame = (function(callback) {
 function currentMs() {
     return new Date().getTime();
 }
+
+/**
+ *  Return the value  or an url GET parameter <name>.
+ *
+ *  See: http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values
+ *  Author: DextOr
+ */
+function getURLParamByName(name) {
+    name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}

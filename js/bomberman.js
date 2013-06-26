@@ -14,7 +14,7 @@ var jsIncludes = {
         'game.js'
     ),
     lounge: new Array(
-
+        'lounge.js'
     ),
     game: new Array(
         'view.js',
@@ -28,7 +28,10 @@ var jsIncludes = {
 }
 
 // Main variables
+var lounge;
 var game;
+var gameMode;
+var gameId;
 var updateLoop;
 var framerate = 60.0;
 
@@ -85,6 +88,12 @@ function loadJsSources(sources, readyFunc) {
  */
 function loadLounge() {
     console.log('Loading lounge...');
+
+    gameMode = parseInt(getURLParamByName('mode'));
+    gameId = parseInt(getURLParamByName('game_id'));
+
+    lounge = new LoungeClass(gameMode);
+    lounge.setup();
 }
 
 /**
@@ -93,7 +102,10 @@ function loadLounge() {
 function loadGame() {
     console.log('Loading game...');
 
-    game = new GameClass(GameModeSinglePlayer);
+    gameMode = parseInt(getURLParamByName('mode'));
+    gameId = parseInt(getURLParamByName('game_id'));
+
+    game = new GameClass(gameMode);
     game.setup();
     game.startGame();
 }
