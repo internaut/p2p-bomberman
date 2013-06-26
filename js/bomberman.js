@@ -25,6 +25,11 @@ var jsIncludes = {
         'bomb.js',
         'controls.js'
     ),
+    multiplayer: new Array(
+        'lib/peer.min.js',
+        'server_comm.js',
+        'p2p_comm.js'
+    )
 }
 
 // Main variables
@@ -90,10 +95,29 @@ function loadLounge() {
     console.log('Loading lounge...');
 
     gameMode = parseInt(getURLParamByName('mode'));
-    gameId = parseInt(getURLParamByName('game_id'));
 
+    var gameIdStr = getURLParamByName('game_id');
+    if (gameIdStr === undefined || gameIdStr === '') {
+        gameId = 0;
+    } else {
+        gameId = gameIdStr;
+        gameMode = GameModeMultiPlayer; // must be MP!
+    }
+
+    if (gameMode == GameModeSinglePlayer) {
+        loadLoungePhase2();
+    } else {
+        // load special MP sources
+        loadJsSources(jsIncludes.multiplayer, loadLoungePhase2)
+    }
+}
+
+/**
+ *  This function will really load the game lounge.
+ */
+function loadLoungePhase2() {
     lounge = new LoungeClass(gameMode);
-    lounge.setup();
+    lounge.setup(gameId);
 }
 
 /**

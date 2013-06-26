@@ -38,6 +38,13 @@ function currentMs() {
 }
 
 /**
+ *  Default handler for error events
+ */
+function defaultErrorFn(err) {
+  console.error(err);
+}
+
+/**
  *  Return the value  or an url GET parameter <name>.
  *
  *  See: http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values

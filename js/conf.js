@@ -8,5 +8,8 @@ var Conf = {
 	maxBombStrength: 5,
 	bombTimerMs: 2000,
 	moveKeyRepeatTimeMs: 100,
-	bombKeyRepeatTimeMs: 500
+	bombKeyRepeatTimeMs: 500,
+	peerJsHost: 'localhost',
+	peerJsPort: 9000,
+	peerJsDebug: true
 };
