@@ -49,6 +49,7 @@ LoungeClass.prototype._setupMP = function() {
 	// show the necessary divs
 	$('#multiplayer_conf').show();
 	$('#playerlist').show();
+	$('#name').attr('disabled');
 
 	// bind handlers
 	$('#name').change(function() {
@@ -69,7 +70,7 @@ LoungeClass.prototype._setupMP = function() {
 			$('#game_conn_status').text('created');
 			$('#game_conn_status').removeClass('status_unknown').addClass('ok');
 
-			// this._sendHello();
+			this._postConnectionSetup();
 		}.bind(this), function(err) {
 			$('#game_conn_status').text('oops!');
 			$('#game_conn_status').removeClass('status_unknown').addClass('not_ok');
@@ -83,7 +84,7 @@ LoungeClass.prototype._setupMP = function() {
 			$('#game_conn_status').text('joined');
 			$('#game_conn_status').removeClass('status_unknown').addClass('ok');
 
-			// this._sendHello();
+			this._postConnectionSetup();
 		}.bind(this), function(err) {
 			$('#game_conn_status').text('oops!');
 			$('#game_conn_status').removeClass('status_unknown').addClass('not_ok');
@@ -91,14 +92,13 @@ LoungeClass.prototype._setupMP = function() {
 	}
 }
 
-LoungeClass.prototype._sendHello = function() {
-	this._playerId = Math.floor(Math.random() * 9000) + 1000;
-	// this._p2pComm.sendHello(this._playerId);
+LoungeClass.prototype._postConnectionSetup = function() {
+	this._playerId = this._p2pComm.getPeerId();
 
-	$('#name').val('player' + this._playerId);
+	$('#name').val('player_' + this._playerId);
 	$('#name').removeAttr('disabled');
 }
 
 LoungeClass.prototype._nameChanged = function(v) {
-	// this._p2pComm.send({name: v});
+	this._p2pComm.sendAll({name: v});
 }

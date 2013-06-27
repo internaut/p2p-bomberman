@@ -10,7 +10,7 @@
  */
 function P2PCommClass() {
     this._peer      = null;     // peer.js Peer object
-    this._conn      = null;
+    this._conn      = null;     // shortcut to this._peer.connections
     this._peerId    = '';       // OWN peer id
     this._connected = false;
 }
@@ -30,6 +30,13 @@ P2PCommClass.prototype.getPeer = function() {
 }
 
 /**
+ *  Return the peer id
+ */
+P2PCommClass.prototype.getPeerId = function() {
+    return this._peerId;
+}
+
+/**
  *  Create a new game. Pass a function <successFn> function(id) that will be called when
  *  we received an Id from the peer.js server and a function <errorFn>.
  */
@@ -42,8 +49,8 @@ P2PCommClass.prototype.createGame = function(successFn, errorFn) {
 
         // new peer connection handler
         this._peer.on('connection', function(conn) {
-            console.log('received a new connection from ' + conn.peer);
-        });
+            this._incomingConnection(conn);
+        }.bind(this));
     }.bind(this), errorFn);
 }
 
@@ -55,17 +62,17 @@ P2PCommClass.prototype.joinGame = function(gameId, successFn, errorFn) {
 
     this._createPeer(function(id) {
         // connect to a peer
-        this._conn = this._peer.connect(gameId);
+        var conn = this._peer.connect(gameId);
 
         // success handler
-        this._conn.on('open', function() {
+        conn.on('open', function() {
             this._connected = true;
-            console.log('opened connection to peer ' + this._conn.peer);
+            console.log('opened connection to peer ' + conn.peer);
             successFn.call(this);
         }.bind(this));
 
         // error handler
-        this._conn.on('error', function(err) {
+        conn.on('error', function(err) {
             this._connected = false;
 
             defaultErrorFn.call(this, err);
@@ -73,22 +80,22 @@ P2PCommClass.prototype.joinGame = function(gameId, successFn, errorFn) {
         }.bind(this));    // watch for errors!
 
         // new peer connection handler
-        this._peer.on('connection', function(conn) {
-            console.log('received a new connection from ' + conn.peer);
+        this._peer.on('connection', function(incomingConn) {
+            this._incomingConnection(incomingConn);
         });
 
         // set data receiver function
-        this._conn.on('data', function(msg) {
-            this._receiverProxy(msg);
+        conn.on('data', function(msg) {
+            this._incomingData(conn, msg);
         }.bind(this));
     }.bind(this), errorFn);    // watch for errors!
 }
 
-P2PCommClass.prototype.sendHello = function(playerId) {
-    if (!this._connected) return;
+// P2PCommClass.prototype.sendHello = function(playerId) {
+//     if (!this._connected) return;
 
-    this._conn.send({hello: playerId});
-}
+//     this._conn.send({hello: playerId});
+// }
 
 P2PCommClass.prototype._createPeer = function(successFn, errorFn) {
     // create a peer
@@ -118,10 +125,21 @@ P2PCommClass.prototype._createPeer = function(successFn, errorFn) {
         defaultErrorFn.call(this, err);
         errorFn.call(this, err);
     }.bind(this));    // watch for errors!
+
+    // set shortcut
+    this._conn = this._peer.connections;
 }
 
-P2PCommClass.prototype._receiverProxy = function(msg) {
-    if (msg.hello) {
-        console.log('received hello from ' + msg.hello);
+P2PCommClass.prototype._incomingConnection = function(conn) {
+    if (conn.peer === undefined) return;
+
+    console.log('received new connection from ' + conn.peer);
+}
+
+P2PCommClass.prototype._incomingData = function(conn, msg) {
+    console.log('received data from ' + conn.peer);
+
+    if (msg.name) {
+        console.log('>name: ' + msg.name);
     }
 }
