@@ -26,7 +26,7 @@ P2PCommClass.prototype.setup = function(peer) {
 /**
  *  Join a game with id <gameId>
  */
-P2PCommClass.prototype.joinGame = function(gameId) {
+P2PCommClass.prototype.joinGame = function(gameId, successFn, errorFn) {
     console.log('Trying to join game ' + gameId);
 
     if (this._peer === null) {
@@ -38,13 +38,28 @@ P2PCommClass.prototype.joinGame = function(gameId) {
         });
     }
 
-    // connect to a peer
-    this._conn = this._peer.connect(gameId);
-    this._conn.on('open', function() {
-        this._connected = true;
-        console.log('opened connection to peer ' + this._conn.peer);
+    this._peer.on('open', function(id) {
+        // connect to a peer
+        this._conn = this._peer.connect(gameId);
+
+        // success handler
+        this._conn.on('open', function() {
+            this._connected = true;
+            console.log('opened connection to peer ' + this._conn.peer);
+            successFn.call();
+        }.bind(this, successFn));
+
+        // error handler
+        this._conn.on('error', function(err) {
+            defaultErrorFn.call(this, err);
+            errorFn.call(this, err);
+        }.bind(errorFn));    // watch for errors!
     }.bind(this));
-    this._conn.on('error', defaultErrorFn);    // watch for errors!
+
+    this._peer.on('error', function(err) {
+        defaultErrorFn.call(this, err);
+        errorFn.call(this, err);
+    }.bind(errorFn));    // watch for errors!
 }
 
 /**

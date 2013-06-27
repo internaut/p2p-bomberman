@@ -20,10 +20,10 @@ ServerCommClass.prototype.setup = function() {
 }
 
 /**
- *  Create a new game. Pass a function <onIdFn> function(id) that will be called when
- *  we received an Id from the peer.js server.
+ *  Create a new game. Pass a function <successFn> function(id) that will be called when
+ *  we received an Id from the peer.js server and a function <errorFn>.
  */
-ServerCommClass.prototype.createGame = function(onIdFn) {
+ServerCommClass.prototype.createGame = function(successFn, errorFn) {
     // create a peer
     this._peer = new Peer({
         host:   Conf.peerJsHost,
@@ -32,8 +32,13 @@ ServerCommClass.prototype.createGame = function(onIdFn) {
     });
 
     // set the 'open' handler function
-    this._peer.on('open', onIdFn);
-    this._peer.on('error', defaultErrorFn);    // watch for errors!
+    this._peer.on('open', successFn);
+
+    // error handler
+    this._peer.on('error', function(err) {
+        defaultErrorFn.call(this, err);
+        errorFn.call(this, err);
+    }.bind(errorFn));    // watch for errors!
 }
 
 /**

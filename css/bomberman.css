@@ -12,6 +12,18 @@ h1 {
 	text-decoration: underline;
 }
 
+.ok {
+	color: green;
+}
+
+.not_ok {
+	color: red;
+}
+
+.status_unknown {
+	color: yellow;
+}
+
 #main {
 	width: 80%;
 	margin-left: auto;
