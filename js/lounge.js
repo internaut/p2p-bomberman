@@ -8,7 +8,7 @@
 function LoungeClass(mode) {
 	this._gameMode 		= mode;
 	this._gameId 		= 0;
-	this._serverComm 	= null;
+	this._playerId 		= 0;
 	this._p2pComm 		= null;
 }
 
@@ -33,7 +33,10 @@ LoungeClass.prototype.setup = function(gameId) {
  * Make special setup for singleplayer mode
  */
 LoungeClass.prototype._setupSP = function() {
+	// show the necessary divs
 	$('#singleplayer_conf').show();
+
+	// bind handlers
 	$('#singleplayer_start_btn').click(function() {
 		window.location = 'game.html?mode=' + this._gameMode;
 	}.bind(this));
@@ -43,21 +46,30 @@ LoungeClass.prototype._setupSP = function() {
  * Make special setup for multiplayer mode
  */
 LoungeClass.prototype._setupMP = function() {
+	// show the necessary divs
 	$('#multiplayer_conf').show();
 	$('#playerlist').show();
 
-	if (this._gameId === 0) {
-		this._serverComm = new ServerCommClass();
-		this._serverComm.setup();
+	// bind handlers
+	$('#name').change(function() {
+		this._nameChanged($('#name').val());
+	}.bind(this));
 
+	// set up P2P comm.
+	this._p2pComm = new P2PCommClass();
+	this._p2pComm.setup();
+
+	if (this._gameId === 0) {	// create a new game
 		$('#game_conn_status').text('creating game...');
 
-		this._serverComm.createGame(function(id) {
+		this._p2pComm.createGame(function(id) {
 			this._gameId = id;
 			$('#game_id').text(this._gameId);	// set the game id when we got it from the server.
 
 			$('#game_conn_status').text('created');
 			$('#game_conn_status').removeClass('status_unknown').addClass('ok');
+
+			// this._sendHello();
 		}.bind(this), function(err) {
 			$('#game_conn_status').text('oops!');
 			$('#game_conn_status').removeClass('status_unknown').addClass('not_ok');
@@ -65,17 +77,28 @@ LoungeClass.prototype._setupMP = function() {
 	} else {
 		$('#game_id').text(this._gameId);	// set the game id
 
-		this._p2pComm = new P2PCommClass();
-		this._p2pComm.setup(null);
-
 		$('#game_conn_status').text('joining...');
 
 		this._p2pComm.joinGame(this._gameId, function() {
 			$('#game_conn_status').text('joined');
 			$('#game_conn_status').removeClass('status_unknown').addClass('ok');
+
+			// this._sendHello();
 		}.bind(this), function(err) {
 			$('#game_conn_status').text('oops!');
 			$('#game_conn_status').removeClass('status_unknown').addClass('not_ok');
 		}.bind(this));
 	}
+}
+
+LoungeClass.prototype._sendHello = function() {
+	this._playerId = Math.floor(Math.random() * 9000) + 1000;
+	// this._p2pComm.sendHello(this._playerId);
+
+	$('#name').val('player' + this._playerId);
+	$('#name').removeAttr('disabled');
+}
+
+LoungeClass.prototype._nameChanged = function(v) {
+	// this._p2pComm.send({name: v});
 }

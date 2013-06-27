@@ -27,7 +27,6 @@ var jsIncludes = {
     ),
     multiplayer: new Array(
         'lib/peer.min.js',
-        'server_comm.js',
         'p2p_comm.js'
     )
 }
