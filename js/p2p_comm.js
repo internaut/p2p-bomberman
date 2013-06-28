@@ -5,6 +5,8 @@
  * Author: Markus Konrad <post@mkonrad.net>
  */
 
+var MsgTypePlayerMetaData = 0;
+
 /**
  * P2P communication constructor. 
  */
@@ -13,6 +15,7 @@ function P2PCommClass() {
     this._conn      = null;     // shortcut to this._peer.connections
     this._peerId    = '';       // OWN peer id
     this._connected = false;
+    this._msgHandler    = new Object(); // message handler with mapping msg type -> {obj, fn}
 }
 
 /**
@@ -46,11 +49,6 @@ P2PCommClass.prototype.createGame = function(successFn, errorFn) {
     this._createPeer(function(gameId) {
         // call success function
         successFn.call(this, gameId);
-
-        // new peer connection handler
-        this._peer.on('connection', function(conn) {
-            this._incomingConnection(conn);
-        }.bind(this));
     }.bind(this), errorFn);
 }
 
@@ -64,7 +62,7 @@ P2PCommClass.prototype.joinGame = function(gameId, successFn, errorFn) {
         // connect to a peer
         var conn = this._peer.connect(gameId);
 
-        // success handler
+        // success handler for outgoing connection
         conn.on('open', function() {
             this._connected = true;
             console.log('opened connection to peer ' + conn.peer);
@@ -79,23 +77,31 @@ P2PCommClass.prototype.joinGame = function(gameId, successFn, errorFn) {
             errorFn.call(this, err);
         }.bind(this));    // watch for errors!
 
-        // new peer connection handler
-        this._peer.on('connection', function(incomingConn) {
-            this._incomingConnection(incomingConn);
-        });
-
         // set data receiver function
-        conn.on('data', function(msg) {
-            this._incomingData(conn, msg);
-        }.bind(this));
+        this._setupConnectionHandlers(conn);
     }.bind(this), errorFn);    // watch for errors!
 }
 
-// P2PCommClass.prototype.sendHello = function(playerId) {
-//     if (!this._connected) return;
+P2PCommClass.prototype.setMsgHandler = function(type, cbObj, cbFn) {
+    this._msgHandler[type] = {fn: cbFn, obj: cbObj};
+}
 
-//     this._conn.send({hello: playerId});
-// }
+P2PCommClass.prototype.sendPlayerMetaData = function(pl_id, pl_name, pl_status) {
+    this.sendAll({
+        type:   MsgTypePlayerMetaData,
+        id:     pl_id,
+        name:   pl_name,
+        status: pl_status
+    });
+}
+
+P2PCommClass.prototype.sendAll = function(msg) {
+    console.log('sending message of type ' + msg.type + ' to all');
+    for (var peerId in this._conn) {
+        var c = this._conn[peerId].peerjs;
+        c.send(msg);
+    }
+}
 
 P2PCommClass.prototype._createPeer = function(successFn, errorFn) {
     // create a peer
@@ -126,6 +132,11 @@ P2PCommClass.prototype._createPeer = function(successFn, errorFn) {
         errorFn.call(this, err);
     }.bind(this));    // watch for errors!
 
+    // new peer connection handler for incoming connections
+    this._peer.on('connection', function(conn) {
+        this._incomingConnection(conn);
+    }.bind(this));
+
     // set shortcut
     this._conn = this._peer.connections;
 }
@@ -134,12 +145,27 @@ P2PCommClass.prototype._incomingConnection = function(conn) {
     if (conn.peer === undefined) return;
 
     console.log('received new connection from ' + conn.peer);
+
+    this._setupConnectionHandlers(conn);
+}
+
+P2PCommClass.prototype._setupConnectionHandlers = function(conn) {
+    // set data receiver function
+    conn.on('data', function(msg) {
+        this._incomingData(conn, msg);
+    }.bind(this));
 }
 
 P2PCommClass.prototype._incomingData = function(conn, msg) {
-    console.log('received data from ' + conn.peer);
+    if (!msg || !msg.hasOwnProperty('type')) return;
 
-    if (msg.name) {
-        console.log('>name: ' + msg.name);
+    console.log('received data from ' + conn.peer + ' with type ' + msg.type);
+
+    var hndl = this._msgHandler[msg.type];
+
+    if (hndl) {
+        hndl.fn.call(hndl.obj, msg);    // call the handler functon hndl.fn on object hndl.obj with parameter msg
+    } else {
+        console.err('no msg handler for type ' + msg.type);
     }
 }

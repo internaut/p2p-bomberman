@@ -5,11 +5,15 @@
  * Author: Markus Konrad <post@mkonrad.net>
  */
 
+var PlayerStatusNotReady 	= 1;
+var PlayerStatusReady 		= 2;
+
 function LoungeClass(mode) {
 	this._gameMode 		= mode;
 	this._gameId 		= 0;
 	this._playerId 		= 0;
 	this._p2pComm 		= null;
+	this._connPlayers	= new Object();	// connected players with id -> name, status mapping
 }
 
 /**
@@ -94,11 +98,49 @@ LoungeClass.prototype._setupMP = function() {
 
 LoungeClass.prototype._postConnectionSetup = function() {
 	this._playerId = this._p2pComm.getPeerId();
-
-	$('#name').val('player_' + this._playerId);
+	var newName = 'player_' + this._playerId;
+	$('#name').val(newName);
 	$('#name').removeAttr('disabled');
+
+	this._p2pComm.setMsgHandler(MsgTypePlayerMetaData, this, this._receivedPlayerMetaData);
+
+	this._addPlayerToList(this._playerId, newName);
+	this._p2pComm.sendPlayerMetaData(this._playerId, newName, PlayerStatusNotReady);
+}
+
+LoungeClass.prototype._addPlayerToList = function(id, playerName) {
+	var playerNameField = $('#playerlist_id_' + id);
+	if (this._connPlayers.hasOwnProperty(id)) {
+		delete this._connPlayers[id];
+		if (playerNameField) playerNameField.detach();
+	}
+
+	this._connPlayers[id] = {name: playerName, status: PlayerStatusNotReady};
+
+	var list = $('#playerlist > ul');
+	var htmlId = 'playerlist_id_' + id;
+	var elem = '<li id="' + htmlId + '" class="not_ok">' + playerName + '</li>';
+	list.append(elem);
+}
+
+LoungeClass.prototype._updatePlayerList = function(id, playerName, status) {
+	var elem = $('#playerlist_id_' + id);
+	elem.text(playerName);
+	if (status === PlayerStatusNotReady) {
+		elem.removeClass('ok').addClass('not_ok');
+	} else if (status === PlayerStatusReady) {
+		elem.removeClass('not_ok').addClass('ok');
+	}
 }
 
 LoungeClass.prototype._nameChanged = function(v) {
-	this._p2pComm.sendAll({name: v});
+	this._p2pComm.sendPlayerMetaData(this._playerId, v, 0);
+}
+
+LoungeClass.prototype._receivedPlayerMetaData = function(msg) {
+	if (this._connPlayers.hasOwnProperty(msg.id)) {
+		this._updatePlayerList(msg.id, msg.name, msg.status);
+	} else {
+		this._addPlayerToList(msg.id, msg.name);
+	}
 }
