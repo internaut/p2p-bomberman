@@ -107,6 +107,7 @@ LoungeClass.prototype._postConnectionSetup = function() {
 	$('#name').val(this._playerName);
 	$('#name').removeAttr('disabled');
 
+	this._p2pComm.setConnClosedHandler(this, this._playerDisconnected);
 	this._p2pComm.setMsgHandler(MsgTypePlayerMetaData, this, this._receivedPlayerMetaData);
 
 	this._addPlayerToList(this._playerId, this._playerName);
@@ -133,6 +134,10 @@ LoungeClass.prototype._addPlayerToList = function(id, playerName) {
 
 LoungeClass.prototype._updatePlayerList = function(id, playerName, status) {
 	var elem = $('#playerlist_id_' + id);
+
+	delete this._connPlayers[id];
+	this._connPlayers[id] = {name: playerName, status: PlayerStatusNotReady};
+
 	elem.text(playerName);
 	if (status === PlayerStatusNotReady) {
 		elem.removeClass('ok').addClass('not_ok');
@@ -165,5 +170,20 @@ LoungeClass.prototype._receivedPlayerMetaData = function(conn, msg) {
 		this._p2pComm.sendKnownPeers(msg.id);
 		this._p2pComm.sendPlayerMetaData(msg.id, this._playerId, this._playerName, this._playerStatus);
 		this._addPlayerToList(msg.id, msg.name);
+	}
+}
+
+LoungeClass.prototype._playerDisconnected = function(peerId) {
+	// remove the player from the list
+	var playerNameField = $('#playerlist_id_' + peerId);
+	if (this._connPlayers.hasOwnProperty(peerId)) {
+		delete this._connPlayers[peerId];
+		if (playerNameField) playerNameField.detach();
+
+		if (Object.keys(this._connPlayers).length === 1) {	// we are the last one in the game
+			this._gameId = this._playerId;		// we take over the game id
+			$('#game_id').text(this._gameId);
+			$('#game_conn_status').text('created');
+		}
 	}
 }

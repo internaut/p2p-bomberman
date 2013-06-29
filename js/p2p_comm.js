@@ -17,7 +17,7 @@ function P2PCommClass() {
     this._peerId        = '';       // OWN peer id
     this._connected     = false;
     this._msgHandler    = new Object(); // message handler with mapping msg type -> {obj, fn}
-    this._newPeerId     = null;
+    this._connClosedHandler = {obj: null, fn: null};
 }
 
 /**
@@ -89,6 +89,11 @@ P2PCommClass.prototype.setMsgHandler = function(type, cbObj, cbFn) {
     this._msgHandler[type] = {fn: cbFn, obj: cbObj};
 }
 
+P2PCommClass.prototype.setConnClosedHandler = function(cbObj, cbFn) {
+    this._connClosedHandler.obj = cbObj;
+    this._connClosedHandler.fn  = cbFn;
+}
+
 P2PCommClass.prototype.sendPlayerMetaData = function(receiverId, pl_id, pl_name, pl_status) {
     var msg = {
         type:   MsgTypePlayerMetaData,
@@ -150,6 +155,11 @@ P2PCommClass.prototype._createPeer = function(successFn, errorFn) {
         this._incomingConnection(conn);
     }.bind(this));
 
+    // connection to peer server is closed
+    this._peer.on('close', function() {
+        console.log('connection to peer server closed');
+    }.bind(this));
+
     // set shortcut
     this._conn = this._peer.connections;
 }
@@ -184,6 +194,11 @@ P2PCommClass.prototype._setupConnectionHandlers = function(conn) {
     conn.on('data', function(msg) {
         this._incomingData(conn, msg);
     }.bind(this));
+
+    conn.on('close', function(peerId) {
+        console.log('connection closed from peer ' + peerId);
+        this._connClosedHandler.fn.call(this._connClosedHandler.obj, peerId);
+    }.bind(this, conn.peer));
 }
 
 P2PCommClass.prototype._incomingData = function(conn, msg) {
