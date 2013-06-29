@@ -61,6 +61,9 @@ LoungeClass.prototype._setupMP = function() {
 	$('#name').change(function() {
 		this._nameChanged($('#name').val());
 	}.bind(this));
+	$('#ready').change(function() {
+		this._statusChanged($('#ready:checked').val());
+	}.bind(this));
 
 	// set up P2P comm.
 	this._p2pComm = new P2PCommClass();
@@ -140,6 +143,17 @@ LoungeClass.prototype._updatePlayerList = function(id, playerName, status) {
 
 LoungeClass.prototype._nameChanged = function(v) {
 	this._playerName = v;
+	this._p2pComm.sendPlayerMetaData(0, this._playerId, this._playerName, this._playerStatus);
+	this._updatePlayerList(this._playerId, this._playerName, this._playerStatus);
+}
+
+LoungeClass.prototype._statusChanged = function(v) {
+	if (v === undefined) {
+		this._playerStatus = PlayerStatusNotReady;
+	} else if (v === 'ready') {
+		this._playerStatus = PlayerStatusReady;
+	}
+
 	this._p2pComm.sendPlayerMetaData(0, this._playerId, this._playerName, this._playerStatus);
 	this._updatePlayerList(this._playerId, this._playerName, this._playerStatus);
 }
