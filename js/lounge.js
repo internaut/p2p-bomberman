@@ -12,6 +12,8 @@ function LoungeClass(mode) {
 	this._gameMode 		= mode;
 	this._gameId 		= 0;
 	this._playerId 		= 0;
+	this._playerName	= '';
+	this._playerStatus	= PlayerStatusNotReady;
 	this._p2pComm 		= null;
 	this._connPlayers	= new Object();	// connected players with id -> name, status mapping
 }
@@ -98,14 +100,17 @@ LoungeClass.prototype._setupMP = function() {
 
 LoungeClass.prototype._postConnectionSetup = function() {
 	this._playerId = this._p2pComm.getPeerId();
-	var newName = 'player_' + this._playerId;
-	$('#name').val(newName);
+	this._playerName = 'player_' + this._playerId;
+	$('#name').val(this._playerName);
 	$('#name').removeAttr('disabled');
 
 	this._p2pComm.setMsgHandler(MsgTypePlayerMetaData, this, this._receivedPlayerMetaData);
 
-	this._addPlayerToList(this._playerId, newName);
-	this._p2pComm.sendPlayerMetaData(this._playerId, newName, PlayerStatusNotReady);
+	this._addPlayerToList(this._playerId, this._playerName);
+
+	if (this._playerId !== this._gameId) {
+		this._p2pComm.sendPlayerMetaData(this._gameId, this._playerId, this._playerName, PlayerStatusNotReady);
+	}
 }
 
 LoungeClass.prototype._addPlayerToList = function(id, playerName) {
@@ -134,13 +139,17 @@ LoungeClass.prototype._updatePlayerList = function(id, playerName, status) {
 }
 
 LoungeClass.prototype._nameChanged = function(v) {
-	this._p2pComm.sendPlayerMetaData(this._playerId, v, 0);
+	this._playerName = v;
+	this._p2pComm.sendPlayerMetaData(0, this._playerId, this._playerName, this._playerStatus);
+	this._updatePlayerList(this._playerId, this._playerName, this._playerStatus);
 }
 
-LoungeClass.prototype._receivedPlayerMetaData = function(msg) {
-	if (this._connPlayers.hasOwnProperty(msg.id)) {
+LoungeClass.prototype._receivedPlayerMetaData = function(conn, msg) {
+	if (this._connPlayers.hasOwnProperty(msg.id)) {	// we already know this player
 		this._updatePlayerList(msg.id, msg.name, msg.status);
-	} else {
+	} else {	// a new player connected!
+		this._p2pComm.sendKnownPeers(msg.id);
+		this._p2pComm.sendPlayerMetaData(msg.id, this._playerId, this._playerName, this._playerStatus);
 		this._addPlayerToList(msg.id, msg.name);
 	}
 }

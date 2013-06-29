@@ -5,24 +5,27 @@
  * Author: Markus Konrad <post@mkonrad.net>
  */
 
-var MsgTypePlayerMetaData = 0;
+var MsgTypeKnownPeers       = 0;
+var MsgTypePlayerMetaData   = 1;
 
 /**
  * P2P communication constructor. 
  */
 function P2PCommClass() {
-    this._peer      = null;     // peer.js Peer object
-    this._conn      = null;     // shortcut to this._peer.connections
-    this._peerId    = '';       // OWN peer id
-    this._connected = false;
+    this._peer          = null;     // peer.js Peer object
+    this._conn          = null;     // shortcut to this._peer.connections
+    this._peerId        = '';       // OWN peer id
+    this._connected     = false;
     this._msgHandler    = new Object(); // message handler with mapping msg type -> {obj, fn}
+    this._newPeerId     = null;
 }
 
 /**
  *  Set up a P2P communication.
  */
 P2PCommClass.prototype.setup = function() {
-
+    // set default message handlers
+    this.setMsgHandler(MsgTypeKnownPeers, this, this._receiveKnownPeers);
 }
 
 /**
@@ -86,13 +89,19 @@ P2PCommClass.prototype.setMsgHandler = function(type, cbObj, cbFn) {
     this._msgHandler[type] = {fn: cbFn, obj: cbObj};
 }
 
-P2PCommClass.prototype.sendPlayerMetaData = function(pl_id, pl_name, pl_status) {
-    this.sendAll({
+P2PCommClass.prototype.sendPlayerMetaData = function(receiverId, pl_id, pl_name, pl_status) {
+    var msg = {
         type:   MsgTypePlayerMetaData,
         id:     pl_id,
         name:   pl_name,
         status: pl_status
-    });
+    };
+
+    if (receiverId === 0) {
+        this.sendAll(msg);
+    } else {
+        this.sendTo(receiverId, msg);
+    }
 }
 
 P2PCommClass.prototype.sendAll = function(msg) {
@@ -101,6 +110,10 @@ P2PCommClass.prototype.sendAll = function(msg) {
         var c = this._conn[peerId].peerjs;
         c.send(msg);
     }
+}
+
+P2PCommClass.prototype.sendTo = function(receiverId, msg) {
+    this._conn[receiverId].peerjs.send(msg);
 }
 
 P2PCommClass.prototype._createPeer = function(successFn, errorFn) {
@@ -147,6 +160,23 @@ P2PCommClass.prototype._incomingConnection = function(conn) {
     console.log('received new connection from ' + conn.peer);
 
     this._setupConnectionHandlers(conn);
+
+    this._newPeerId = conn.peer;
+}
+
+P2PCommClass.prototype.sendKnownPeers = function(newPeerId) {
+    var knownPeers = new Array();
+    for (var peerId in this._conn) {
+        knownPeers.push(peerId);
+    }
+
+    console.log('sending known peers to peer ' + newPeerId);
+
+    this.sendTo(newPeerId, {type: MsgTypeKnownPeers, peers: knownPeers});
+}
+
+P2PCommClass.prototype._receiveKnownPeers = function(conn, msg) {
+    console.log('received known peers from peer ' + conn.peer);
 }
 
 P2PCommClass.prototype._setupConnectionHandlers = function(conn) {
@@ -164,7 +194,7 @@ P2PCommClass.prototype._incomingData = function(conn, msg) {
     var hndl = this._msgHandler[msg.type];
 
     if (hndl) {
-        hndl.fn.call(hndl.obj, msg);    // call the handler functon hndl.fn on object hndl.obj with parameter msg
+        hndl.fn.call(hndl.obj, conn, msg);    // call the handler functon hndl.fn on object hndl.obj with parameter msg
     } else {
         console.err('no msg handler for type ' + msg.type);
     }
