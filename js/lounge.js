@@ -10,7 +10,6 @@ var PlayerStatusReady 		= 2;
 
 function LoungeClass(mode) {
 	this._gameMode 		= mode;
-	this._gameId 		= 0;
 	this._playerId 		= 0;
 	this._playerName	= '';
 	this._playerStatus	= PlayerStatusNotReady;
@@ -20,18 +19,17 @@ function LoungeClass(mode) {
 
 /**
  * Set up the game lounge.
- * If in MP mode, this function requires a <gameId> to join to. If
- * <gameId> is 0, we will create a new MP game.
+ * If in MP mode, this function requires a <joinId> to join to. If
+ * <joinId> is 0, we will create a new MP game.
  */
-LoungeClass.prototype.setup = function(gameId) {
-	console.log('Setting up lounge in mode ' + this._gameMode + ' and game id ' + gameId);
+LoungeClass.prototype.setup = function(joinId) {
+	console.log('Setting up lounge in mode ' + this._gameMode + ' and join id ' + joinId);
 
 	// show necessary elements
 	if (this._gameMode === GameModeSinglePlayer) {
 		this._setupSP();
 	} else {
-		this._gameId = gameId;
-		this._setupMP();
+		this._setupMP(joinId);
 	}
 }
 
@@ -51,7 +49,7 @@ LoungeClass.prototype._setupSP = function() {
 /**
  * Make special setup for multiplayer mode
  */
-LoungeClass.prototype._setupMP = function() {
+LoungeClass.prototype._setupMP = function(joinId) {
 	// show the necessary divs
 	$('#multiplayer_conf').show();
 	$('#playerlist').show();
@@ -69,36 +67,36 @@ LoungeClass.prototype._setupMP = function() {
 	this._p2pComm = new P2PCommClass();
 	this._p2pComm.setup();
 
-	if (this._gameId === 0) {	// create a new game
-		$('#game_conn_status').text('creating game...');
+	$('#player_conn_status').text('receiving peer id...');
+	this._p2pComm.createPeer(function(id){
+		this.player_id = id;
+		$('#player_id').text(this.player_id);	// set the player id when we got it from the server.
+		$('#player_conn_status').text('awaiting connections');
+		$('#player_conn_status').removeClass('status_unknown').addClass('ok');
 
-		this._p2pComm.createGame(function(id) {
-			this._gameId = id;
-			$('#game_id').text(this._gameId);	// set the game id when we got it from the server.
+		this._postConnectionSetup();
 
-			$('#game_conn_status').text('created');
-			$('#game_conn_status').removeClass('status_unknown').addClass('ok');
+		if (joinId !== 0) {	// join a player
+			this._p2pComm.joinPeer(joinId);
+		}
+	}.bind(this), function(err) {
+		$('#player_conn_status').text('oops! no peer id!');
+		$('#player_conn_status').removeClass('status_unknown').addClass('not_ok');
+	}.bind(this));
+}
 
-			this._postConnectionSetup();
-		}.bind(this), function(err) {
-			$('#game_conn_status').text('oops!');
-			$('#game_conn_status').removeClass('status_unknown').addClass('not_ok');
-		}.bind(this));
-	} else {
-		$('#game_id').text(this._gameId);	// set the game id
+LoungeClass.prototype._joiningPeer = function(peerId) {
+	$('#player_conn_status').text('joining ' + peerId + '...');
+}
 
-		$('#game_conn_status').text('joining...');
+LoungeClass.prototype._joinedPeer = function(peerId) {
+	$('#player_conn_status').text('awaiting connections');
+	this._sendOwnStatus(peerId);
+}
 
-		this._p2pComm.joinGame(this._gameId, function() {
-			$('#game_conn_status').text('joined');
-			$('#game_conn_status').removeClass('status_unknown').addClass('ok');
-
-			this._postConnectionSetup();
-		}.bind(this), function(err) {
-			$('#game_conn_status').text('oops!');
-			$('#game_conn_status').removeClass('status_unknown').addClass('not_ok');
-		}.bind(this));
-	}
+LoungeClass.prototype._errorJoiningPeer = function(err) {
+	$('#player_conn_status').text('oops! error joining!');
+	$('#player_conn_status').removeClass('status_unknown').addClass('not_ok');
 }
 
 LoungeClass.prototype._postConnectionSetup = function() {
@@ -107,14 +105,12 @@ LoungeClass.prototype._postConnectionSetup = function() {
 	$('#name').val(this._playerName);
 	$('#name').removeAttr('disabled');
 
+	this._p2pComm.setConnEstablishingHandler(this, this._joiningPeer, this._joinedPeer, this._errorJoiningPeer);
+	this._p2pComm.setConnOpenedHandler(this, this._playerConnected);
 	this._p2pComm.setConnClosedHandler(this, this._playerDisconnected);
 	this._p2pComm.setMsgHandler(MsgTypePlayerMetaData, this, this._receivedPlayerMetaData);
 
 	this._addPlayerToList(this._playerId, this._playerName);
-
-	if (this._playerId !== this._gameId) {
-		this._p2pComm.sendPlayerMetaData(this._gameId, this._playerId, this._playerName, PlayerStatusNotReady);
-	}
 }
 
 LoungeClass.prototype._addPlayerToList = function(id, playerName) {
@@ -148,7 +144,7 @@ LoungeClass.prototype._updatePlayerList = function(id, playerName, status) {
 
 LoungeClass.prototype._nameChanged = function(v) {
 	this._playerName = v;
-	this._p2pComm.sendPlayerMetaData(0, this._playerId, this._playerName, this._playerStatus);
+	this._sendOwnStatus(0);	// to all
 	this._updatePlayerList(this._playerId, this._playerName, this._playerStatus);
 }
 
@@ -159,7 +155,7 @@ LoungeClass.prototype._statusChanged = function(v) {
 		this._playerStatus = PlayerStatusReady;
 	}
 
-	this._p2pComm.sendPlayerMetaData(0, this._playerId, this._playerName, this._playerStatus);
+	this._sendOwnStatus(0);	// to all
 	this._updatePlayerList(this._playerId, this._playerName, this._playerStatus);
 }
 
@@ -168,22 +164,33 @@ LoungeClass.prototype._receivedPlayerMetaData = function(conn, msg) {
 		this._updatePlayerList(msg.id, msg.name, msg.status);
 	} else {	// a new player connected!
 		this._p2pComm.sendKnownPeers(msg.id);
-		this._p2pComm.sendPlayerMetaData(msg.id, this._playerId, this._playerName, this._playerStatus);
+		this._sendOwnStatus(msg.id);
 		this._addPlayerToList(msg.id, msg.name);
 	}
 }
 
+LoungeClass.prototype._sendOwnStatus = function(receiverId) {
+	this._p2pComm.sendPlayerMetaData(receiverId, this._playerId, this._playerName, this._playerStatus);
+}
+
+LoungeClass.prototype._playerConnected = function(peerId) {
+	console.log('player connected: ' + peerId);
+
+	this._sendOwnStatus(peerId);
+}
+
 LoungeClass.prototype._playerDisconnected = function(peerId) {
+	console.log('player disconnected: ' + peerId);
+
 	// remove the player from the list
 	var playerNameField = $('#playerlist_id_' + peerId);
 	if (this._connPlayers.hasOwnProperty(peerId)) {
 		delete this._connPlayers[peerId];
 		if (playerNameField) playerNameField.detach();
-
-		if (Object.keys(this._connPlayers).length === 1) {	// we are the last one in the game
-			this._gameId = this._playerId;		// we take over the game id
-			$('#game_id').text(this._gameId);
-			$('#game_conn_status').text('created');
-		}
+		// if (Object.keys(this._connPlayers).length === 1) {	// we are the last one in the game
+		// 	this._gameId = this._playerId;		// we take over the game id
+		// 	$('#game_id').text(this._gameId);
+		// 	$('#game_conn_status').text('created');
+		// }
 	}
 }
