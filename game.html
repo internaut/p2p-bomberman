@@ -1,7 +1,7 @@
 <!DOCTYPE HTML> 
 <html lang="en"> 
 <head>
-<title>P2P Bomberman: Running game</title>
+<title>P2P Bomberman</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
 <meta http-equiv="Content-Language" content="en-us"> 
 <meta http-equiv="cache-control" content="max-age=0">
@@ -18,9 +18,46 @@
 
 </head> 
  
-<body onload="init('game')"> 
+<body onload="init('lounge')"> 
 
-<canvas style="border: 1px solid white" id="canvas" width="640" height="640"></canvas>
+<div id="main">
+	<h1>Game lounge</h1>
+	
+	<div id="lounge">
+		<h2>Game help</h2>
+
+		<p>
+			Bla.
+		</p>
+
+		<div id="multiplayer_conf">
+			<h2>Your player</h2>
+
+			<p>Player ID: <span id="player_id"></span> <em>(<span id="player_conn_status" class="status_unknown">wait...</span>)</em></p>
+
+			<form id="save_player_form" action="#">
+				<label for="name">Name:</label> <input id="name" name="name" type="text" value="" disabled="disabled"><br>
+				<br>
+				<label for="ready">Are you ready?<label> <input id="ready" name="ready" value="ready" type="checkbox"><br>
+			</form>
+		</div>
+		<div id="singleplayer_conf">
+			<input id="singleplayer_start_btn" type="button" value="Go!">
+		</div>
+	</div>
+
+	<div id="playerlist">
+		<h2>Players</h2>
+
+		<ul>
+
+		</ul>
+	</div>
+
+	<div id="game">
+		<canvas style="border: 1px solid white" id="canvas" width="640" height="640"></canvas>
+	</div>
+</div>
 
 </body> 
 

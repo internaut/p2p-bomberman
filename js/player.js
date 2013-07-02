@@ -7,6 +7,12 @@
  */
 
 /**
+ * Define player status values.
+ */
+var PlayerStatusNotReady    = 1;
+var PlayerStatusReady       = 2;
+
+/**
  * Define player types.
  */
 var PlayerTypeLocalKeyboardArrows  = 0;
@@ -32,7 +38,10 @@ function PlayerClass(type) {
         this._color = 'blue';
     }
     
+    this._id = 0;               // peer id
+    this._name = '';            // user name
     this._alive = true;         // status
+    this._status = PlayerStatusNotReady;    // ready/not ready
     this._type = type;          // type
     this._playerManager = null; // ref. to PlayerManagerClass
 
@@ -60,6 +69,8 @@ PlayerClass.prototype.getType = function() {
  */
 PlayerClass.prototype.setType = function(t) {
     this._type = t;
+
+    return this;
 }
 
 /**
@@ -67,6 +78,8 @@ PlayerClass.prototype.setType = function(t) {
  */
 PlayerClass.prototype.setAlive = function(v) {
     this._alive = v;
+
+    return this;
 }
 
 /**
@@ -74,6 +87,54 @@ PlayerClass.prototype.setAlive = function(v) {
  */
 PlayerClass.prototype.getAlive = function() {
     return this._alive;
+}
+
+/**
+ * Return the player name
+ */
+PlayerClass.prototype.getName = function() {
+    return this._name;
+}
+
+/**
+ * Set the player name to string <s>.
+ */
+PlayerClass.prototype.setName = function(s) {
+    this._name = s;
+
+    return this;
+}
+
+/**
+ * Return the peer id.
+ */
+PlayerClass.prototype.getId = function() {
+    return this._id;
+}
+
+/**
+ * Set the peer id to <id>.
+ */
+PlayerClass.prototype.setId = function(id) {
+    this._id = id;
+
+    return this;
+}
+
+/**
+ * Return the player status.
+ */
+PlayerClass.prototype.getStatus = function() {
+    return this._status;
+}
+
+/**
+ * Set the player status to <status>
+ */
+PlayerClass.prototype.setStatus = function(status) {
+    this._status = status;
+
+    return this;
 }
 
 /**

@@ -5,16 +5,13 @@
  * Author: Markus Konrad <post@mkonrad.net>
  */
 
-var PlayerStatusNotReady 	= 1;
-var PlayerStatusReady 		= 2;
+var postGameStartCallback = null;
 
 function LoungeClass(mode) {
 	this._gameMode 		= mode;
-	this._playerId 		= 0;
-	this._playerName	= '';
-	this._playerStatus	= PlayerStatusNotReady;
 	this._p2pComm 		= null;
-	this._connPlayers	= new Object();	// connected players with id -> name, status mapping
+	this._playerManager = null;
+	this._ownPlayer		= null;
 }
 
 /**
@@ -24,6 +21,8 @@ function LoungeClass(mode) {
  */
 LoungeClass.prototype.setup = function(joinId) {
 	console.log('Setting up lounge in mode ' + this._gameMode + ' and join id ' + joinId);
+
+	postGameStartCallback = {obj: this, fn: this._startGame};
 
 	// show necessary elements
 	if (this._gameMode === GameModeSinglePlayer) {
@@ -42,7 +41,8 @@ LoungeClass.prototype._setupSP = function() {
 
 	// bind handlers
 	$('#singleplayer_start_btn').click(function() {
-		window.location = 'game.html?mode=' + this._gameMode;
+		$('#lounge').hide();
+		init('game');
 	}.bind(this));
 }
 
@@ -62,6 +62,9 @@ LoungeClass.prototype._setupMP = function(joinId) {
 	$('#ready').change(function() {
 		this._statusChanged($('#ready:checked').val());
 	}.bind(this));
+
+	// set up player manager
+	this._playerManager = new PlayerManagerClass();
 
 	// set up P2P comm.
 	this._p2pComm = new P2PCommClass();
@@ -85,6 +88,21 @@ LoungeClass.prototype._setupMP = function(joinId) {
 	}.bind(this));
 }
 
+LoungeClass.prototype._startGame = function() {
+    game = new GameClass(this._gameMode);
+
+	if (this._gameMode === GameModeSinglePlayer) {
+
+	} else {
+
+	}
+
+	$('#main > h1').hide();
+    game.setup();
+    game.startGame();
+    $('#game').show();
+}
+
 LoungeClass.prototype._joiningPeer = function(peerId) {
 	$('#player_conn_status').text('joining ' + peerId + '...');
 }
@@ -100,28 +118,44 @@ LoungeClass.prototype._errorJoiningPeer = function(err) {
 }
 
 LoungeClass.prototype._postConnectionSetup = function() {
-	this._playerId = this._p2pComm.getPeerId();
-	this._playerName = 'player_' + this._playerId;
-	$('#name').val(this._playerName);
+	this._ownPlayer = new PlayerClass(PlayerTypeLocalKeyboardArrows);
+	var playerId = this._p2pComm.getPeerId();
+	var playerName = 'player_' + playerId;
+	this._ownPlayer.setId(playerId).setName(playerName);
+
+	// add our player to the player manager
+	this._playerManager.addPlayer(this._ownPlayer);
+
+	// set the form values
+	$('#name').val(playerName);
 	$('#name').removeAttr('disabled');
 
+	// set the p2p event handlers
 	this._p2pComm.setConnEstablishingHandler(this, this._joiningPeer, this._joinedPeer, this._errorJoiningPeer);
 	this._p2pComm.setConnOpenedHandler(this, this._playerConnected);
 	this._p2pComm.setConnClosedHandler(this, this._playerDisconnected);
 	this._p2pComm.setMsgHandler(MsgTypePlayerMetaData, this, this._receivedPlayerMetaData);
 
-	this._addPlayerToList(this._playerId, this._playerName);
+	// add our player to the list
+	this._addPlayerToList(playerId, playerName, false);
 }
 
-LoungeClass.prototype._addPlayerToList = function(id, playerName) {
+LoungeClass.prototype._addPlayerToList = function(id, playerName, isRemotePlayer) {
 	var playerNameField = $('#playerlist_id_' + id);
-	if (this._connPlayers.hasOwnProperty(id)) {
-		delete this._connPlayers[id];
-		if (playerNameField) playerNameField.detach();
+
+	// create a new remote player object
+	if (isRemotePlayer) {
+		if (this._playerManager.playerExists(id)) {
+			this._playerManager.removePlayer(id);
+			if (playerNameField) playerNameField.detach();
+		}
+
+		var remotePlayer = new PlayerClass(PlayerTypeRemote);
+		remotePlayer.setId(id).setName(playerName);
+		this._playerManager.addPlayer(remotePlayer);
 	}
 
-	this._connPlayers[id] = {name: playerName, status: PlayerStatusNotReady};
-
+	// create the new element
 	var list = $('#playerlist > ul');
 	var htmlId = 'playerlist_id_' + id;
 	var elem = '<li id="' + htmlId + '" class="not_ok">' + playerName + '</li>';
@@ -130,11 +164,10 @@ LoungeClass.prototype._addPlayerToList = function(id, playerName) {
 
 LoungeClass.prototype._updatePlayerList = function(id, playerName, status) {
 	var elem = $('#playerlist_id_' + id);
-
-	delete this._connPlayers[id];
-	this._connPlayers[id] = {name: playerName, status: PlayerStatusNotReady};
+	this._playerManager.getPlayer(id).setName(playerName).setStatus(status);
 
 	elem.text(playerName);
+
 	if (status === PlayerStatusNotReady) {
 		elem.removeClass('ok').addClass('not_ok');
 	} else if (status === PlayerStatusReady) {
@@ -143,34 +176,35 @@ LoungeClass.prototype._updatePlayerList = function(id, playerName, status) {
 }
 
 LoungeClass.prototype._nameChanged = function(v) {
-	this._playerName = v;
+	this._ownPlayer.setName(v);
 	this._sendOwnStatus(0);	// to all
-	this._updatePlayerList(this._playerId, this._playerName, this._playerStatus);
+	this._updatePlayerList(this._ownPlayer.getId(), this._ownPlayer.getName(), this._ownPlayer.getStatus());
 }
 
 LoungeClass.prototype._statusChanged = function(v) {
-	if (v === undefined) {
-		this._playerStatus = PlayerStatusNotReady;
-	} else if (v === 'ready') {
-		this._playerStatus = PlayerStatusReady;
-	}
+	var status = PlayerStatusNotReady;
 
+	if (v === 'ready') {
+		status = PlayerStatusReady;
+	}
+	this._ownPlayer.setStatus(status);
 	this._sendOwnStatus(0);	// to all
-	this._updatePlayerList(this._playerId, this._playerName, this._playerStatus);
+	this._updatePlayerList(this._ownPlayer.getId(), this._ownPlayer.getName(), this._ownPlayer.getStatus());
 }
 
 LoungeClass.prototype._receivedPlayerMetaData = function(conn, msg) {
-	if (this._connPlayers.hasOwnProperty(msg.id)) {	// we already know this player
+	if (this._playerManager.playerExists(msg.id)) {	// we already know this player
 		this._updatePlayerList(msg.id, msg.name, msg.status);
 	} else {	// a new player connected!
 		this._p2pComm.sendKnownPeers(msg.id);
 		this._sendOwnStatus(msg.id);
-		this._addPlayerToList(msg.id, msg.name);
+		this._addPlayerToList(msg.id, msg.name, true);
 	}
 }
 
 LoungeClass.prototype._sendOwnStatus = function(receiverId) {
-	this._p2pComm.sendPlayerMetaData(receiverId, this._playerId, this._playerName, this._playerStatus);
+	console.log('Sending own status: ' + this._ownPlayer + ' to peer ' + receiverId);
+	this._p2pComm.sendPlayerMetaData(receiverId, this._ownPlayer.getId(), this._ownPlayer.getName(), this._ownPlayer.getStatus());
 }
 
 LoungeClass.prototype._playerConnected = function(peerId) {
@@ -184,13 +218,8 @@ LoungeClass.prototype._playerDisconnected = function(peerId) {
 
 	// remove the player from the list
 	var playerNameField = $('#playerlist_id_' + peerId);
-	if (this._connPlayers.hasOwnProperty(peerId)) {
-		delete this._connPlayers[peerId];
+	if (this._playerManager.playerExists(peerId)) {
+		this._playerManager.removePlayer(peerId);
 		if (playerNameField) playerNameField.detach();
-		// if (Object.keys(this._connPlayers).length === 1) {	// we are the last one in the game
-		// 	this._gameId = this._playerId;		// we take over the game id
-		// 	$('#game_id').text(this._gameId);
-		// 	$('#game_conn_status').text('created');
-		// }
 	}
 }

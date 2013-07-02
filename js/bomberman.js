@@ -11,17 +11,17 @@ var jsIncludes = {
     common: new Array(
         'conf.js',
         'helper.js',
-        'game.js'
+        'game.js',
+        'entity.js',
+        'player.js',
+        'player_manager.js'
     ),
     lounge: new Array(
         'lounge.js'
     ),
     game: new Array(
         'view.js',
-        'entity.js',
         'map.js',
-        'player.js',
-        'player_manager.js',
         'bomb.js',
         'controls.js'
     ),
@@ -35,7 +35,7 @@ var jsIncludes = {
 var lounge;
 var game;
 var gameMode;
-var gameId;
+var joinId;
 var updateLoop;
 var framerate = 60.0;
 
@@ -95,11 +95,11 @@ function loadLounge() {
 
     gameMode = parseInt(getURLParamByName('mode'));
 
-    var gameIdStr = getURLParamByName('game_id');
-    if (gameIdStr === undefined || gameIdStr === '') {
-        gameId = 0;
+    var joinIdStr = getURLParamByName('join_id');
+    if (joinIdStr === undefined || joinIdStr === '') {
+        joinId = 0;
     } else {
-        gameId = gameIdStr;
+        joinId = joinIdStr;
         gameMode = GameModeMultiPlayer; // must be MP!
     }
 
@@ -116,7 +116,7 @@ function loadLounge() {
  */
 function loadLoungePhase2() {
     lounge = new LoungeClass(gameMode);
-    lounge.setup(gameId);
+    lounge.setup(joinId);
 }
 
 /**
@@ -125,11 +125,9 @@ function loadLoungePhase2() {
 function loadGame() {
     console.log('Loading game...');
 
-    gameMode = parseInt(getURLParamByName('mode'));
-    gameId = parseInt(getURLParamByName('game_id'));
+    postGameStartCallback.fn.call(postGameStartCallback.obj);
 
-    game = new GameClass(gameMode);
-    game.setup();
-    game.startGame();
+    // gameMode = parseInt(getURLParamByName('mode'));
+    // joinId = parseInt(getURLParamByName('join_id'));
 }
 

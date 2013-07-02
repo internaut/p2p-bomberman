@@ -9,7 +9,8 @@
  * Player manager class constructor.
  */
 function PlayerManagerClass() {
-    this._players = new Array();    // will hold all players of the game.
+    this._localPlayer = null;       // ref. to the only local player instance
+    this._players = new Object();   // will hold all players with mapping id -> PlayerClass object
 
     this._map = null;               // ref. to MapClass.
 }
@@ -23,32 +24,55 @@ PlayerManagerClass.prototype.setup = function(mapRef) {
 }
 
 /**
- * Return array of all players.
+ * Return array of all players as array.
  */
 PlayerManagerClass.prototype.getPlayers = function() {
-    return this._players;
+    var arr = $.map(this._players,function(v){
+        return v;
+    });
+
+    return arr;
+}
+
+/**
+ * Return a specific player identified by <playerId>
+ */
+PlayerManagerClass.prototype.getPlayer = function(playerId) {
+    return this._players[playerId];
+}
+
+/**
+ * Return the local player instance.
+ */
+PlayerManagerClass.prototype.getLocalPlayer = function() {
+    return this._localPlayer;
+}
+
+/**
+ * Returns true if a player with id <playerId> exists or otherwise false.
+ */
+PlayerManagerClass.prototype.playerExists = function(playerId) {
+    return this._players.hasOwnProperty(playerId);
 }
 
 /**
  * Add a new player to the game.
  */
 PlayerManagerClass.prototype.addPlayer = function(p) {
-    this._players.push(p);
+    this._players[p.getId()] = p;
+
+    if (p.getType() === PlayerTypeLocalKeyboardArrows || p.getType() === PlayerTypeLocalKeyboardWSAD) {
+        this._localPlayer = p;
+    }
 }
 
 /**
- * Remove a player from the game.
+ * Remove a player with id <playerId> from the game.
  */
-PlayerManagerClass.prototype.removePlayer = function(p) {
-    for (var i = 0; i < this._players.length; i++) {
-        if (this._players[i] === p) {
-            this._players.splice(i, 1);
-
-            return true;
-        }
+PlayerManagerClass.prototype.removePlayer = function(playerId) {
+    if (this._players.hasOwnProperty(playerId)) {
+        delete this._players[playerId];
     }
-
-    return false;
 }
 
 /**
@@ -56,7 +80,7 @@ PlayerManagerClass.prototype.removePlayer = function(p) {
  */
 PlayerManagerClass.prototype.checkGameStatus = function() {
     var numAlive = 0;
-    for (var i = 0; i < this._players.length; i++) {
+    for (var i in this._players) {
         if (this._players[i].getAlive() === true) numAlive++;
     }
 
@@ -82,7 +106,7 @@ PlayerManagerClass.prototype.spawnAllPlayers = function() {
     spawnPoints.shuffle();
 
     // spawn players
-    for (var i = 0; i < this._players.length; i++) {
+    for (var i in this._players) {
         this.spawnPlayer(this._players[i], spawnPoints[i]);
     }
 }
