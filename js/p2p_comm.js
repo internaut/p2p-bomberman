@@ -123,6 +123,14 @@ P2PCommClass.prototype.joinPeer = function(peerId) {
     this._setupConnectionHandlers(conn);
 }
 
+/**
+ * Disconnect from a peer with id <peerId>.
+ */
+P2PCommClass.prototype.disconnectFromPeer = function(peerId) {
+    console.log('closing connection to peer ' + peerId);
+    this._conn[peerId].peerjs.close();
+}
+
 P2PCommClass.prototype.setMsgHandler = function(type, cbObj, cbFn) {
     this._msgHandler[type] = {fn: cbFn, obj: cbObj};
 }

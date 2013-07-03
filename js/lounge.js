@@ -196,14 +196,19 @@ LoungeClass.prototype._receivedPlayerMetaData = function(conn, msg) {
 	if (this._playerManager.playerExists(msg.id)) {	// we already know this player
 		this._updatePlayerList(msg.id, msg.name, msg.status);
 	} else {	// a new player connected!
-		this._p2pComm.sendKnownPeers(msg.id);
-		this._sendOwnStatus(msg.id);
-		this._addPlayerToList(msg.id, msg.name, true);
+		if (this._playerManager.getPlayers().length >= Conf.maxNumPlayers) {	// we already have enough players
+			console.log('too many players - closing connection!');
+			this._p2pComm.disconnectFromPeer(msg.id);
+		} else {	// add this player to the list and send hin some information
+			this._p2pComm.sendKnownPeers(msg.id);
+			this._sendOwnStatus(msg.id);
+			this._addPlayerToList(msg.id, msg.name, true);
+		}
 	}
 }
 
 LoungeClass.prototype._sendOwnStatus = function(receiverId) {
-	console.log('Sending own status: ' + this._ownPlayer + ' to peer ' + receiverId);
+	// console.log('Sending own status: ' + this._ownPlayer + ' to peer ' + receiverId);
 	this._p2pComm.sendPlayerMetaData(receiverId, this._ownPlayer.getId(), this._ownPlayer.getName(), this._ownPlayer.getStatus());
 }
 
