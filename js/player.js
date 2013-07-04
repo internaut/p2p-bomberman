@@ -21,6 +21,16 @@ var PlayerTypeLocalAI              = 2;    // not supported yet
 var PlayerTypeRemote               = 3;
 
 /**
+ * Define possible player colors.
+ */
+var PlayerColors = new Array(
+    'gold',
+    'blue',
+    'deeppink',
+    'lime'
+);
+
+/**
  * Inherit from EntityClass.
  */
 PlayerClass.prototype = new EntityClass();
@@ -32,12 +42,8 @@ PlayerClass.prototype.parent = EntityClass.prototype;
  */
 function PlayerClass(type) {
     this._margin = 5;
-    if (type === PlayerTypeLocalKeyboardArrows) {
-        this._color = 'green';
-    } else if (type === PlayerTypeLocalKeyboardWSAD) {
-        this._color = 'blue';
-    }
-    
+    this._color = PlayerColors[0];  // set default color
+
     this._id = 0;               // peer id
     this._name = '';            // user name
     this._alive = true;         // status
@@ -133,6 +139,22 @@ PlayerClass.prototype.getStatus = function() {
  */
 PlayerClass.prototype.setStatus = function(status) {
     this._status = status;
+
+    return this;
+}
+
+/**
+ * Set the player color.
+ */
+PlayerClass.prototype.getColor = function() {
+    return this._color;
+}
+
+/**
+ * Get the player color.
+ */
+PlayerClass.prototype.setColor = function(c) {
+    this._color = c;
 
     return this;
 }

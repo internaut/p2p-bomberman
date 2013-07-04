@@ -26,12 +26,17 @@ function GameClass(mode) {
 /**
  * Set up a new game.
  */
-GameClass.prototype.setup = function() {
+GameClass.prototype.setup = function(playerManagerRef) {
 	// create all objects
     this._view 			= new ViewClass();
     this._map 			= new MapClass();
     this._controls 		= new Array();
-    this._playerManager = new PlayerManagerClass();
+
+    if (playerManagerRef === null) {
+    	this._playerManager = new PlayerManagerClass();
+    } else {
+    	this._playerManager = playerManagerRef;
+    }
 
     // set up the view and the map
     this._view.setup(MapDimensions.w, MapDimensions.h);
@@ -58,11 +63,7 @@ GameClass.prototype.startGame = function() {
 
 		// set player1 controls to arrow keys
 		var player1Controls = new ControlsClass();
-		player1Controls.setup(player1, new Array(
-			'left', 'right',
-			'up', 'down',
-			'b'
-		));
+		player1Controls.setup(player1, Conf.arrowKeyMapping);
 		this._controls.push(player1Controls);
 
 		// init local player 2
@@ -73,12 +74,23 @@ GameClass.prototype.startGame = function() {
 
 		// set player2 controls to WSAD
 		var player2Controls = new ControlsClass();
-		player2Controls.setup(player2, new Array(
-			'a', 'd',
-			'w', 's',
-			'x'
-		));
+		player2Controls.setup(player2, Conf.wsadKeyMapping);
 		this._controls.push(player2Controls);
+	} else {
+		// set up the local player
+		var localPlayer = this._playerManager.getLocalPlayer();
+		var localPlayerControls = new ControlsClass();
+		localPlayerControls.setup(localPlayer, Conf.arrowKeyMapping);
+		this._controls.push(localPlayerControls);
+
+		// set up all players
+		this._playerManager.setupPlayers(this._view);
+
+		// add the players as entities
+		var players = this._playerManager.getPlayers();
+		for (var i = 0; i < players.length; i++) {
+			this._view.addEntity(players[i]);
+		}
 	}
     
     // spawn all players

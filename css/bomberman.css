@@ -62,6 +62,7 @@ h1 {
 
 #game {
 	display: none;
+	float: left;
 }
 
 #lounge {
@@ -72,6 +73,7 @@ h1 {
 #playerlist {
 	float: left;
 	display: none;
+	padding: 1em;
 }
 
 #multiplayer_conf, #singleplayer_conf {

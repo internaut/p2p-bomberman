@@ -56,6 +56,15 @@ PlayerManagerClass.prototype.playerExists = function(playerId) {
 }
 
 /**
+ * Set up all players with a view <viewRef> and the player manager reference.
+ */
+PlayerManagerClass.prototype.setupPlayers = function(viewRef) {
+    for (var id in this._players) {
+        this._players[id].setup(viewRef, this);
+    }
+}
+
+/**
  * Add a new player to the game.
  */
 PlayerManagerClass.prototype.addPlayer = function(p) {
@@ -106,8 +115,9 @@ PlayerManagerClass.prototype.spawnAllPlayers = function() {
     spawnPoints.shuffle();
 
     // spawn players
-    for (var i in this._players) {
-        this.spawnPlayer(this._players[i], spawnPoints[i]);
+    var i = 0;
+    for (var id in this._players) {
+        this.spawnPlayer(this._players[id], spawnPoints[i++]);
     }
 }
 

@@ -12,5 +12,16 @@ var Conf = {
 	bombKeyRepeatTimeMs: 500,
 	peerJsHost: 'localhost',
 	peerJsPort: 9000,
-	peerJsDebug: true
+	peerJsDebug: true,
+	arrowKeyMapping: new Array(
+			'left', 'right',
+			'up', 'down',
+			'b'
+		),
+	wsadKeyMapping: new Array(
+			'a', 'd',
+			'w', 's',
+			'x'
+		)
+
 };

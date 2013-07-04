@@ -83,22 +83,27 @@ LoungeClass.prototype._setupMP = function(joinId) {
 			this._p2pComm.joinPeer(joinId);
 		}
 	}.bind(this), function(err) {
-		$('#player_conn_status').text('oops! no peer id!');
+		$('#player_conn_status').text('oops!');
 		$('#player_conn_status').removeClass('status_unknown').addClass('not_ok');
 	}.bind(this));
 }
 
+/**
+ * Start the game (depending on game mode).
+ */
 LoungeClass.prototype._startGame = function() {
+	// create the game object
     game = new GameClass(this._gameMode);
 
+    // set up the game depending on game mode
 	if (this._gameMode === GameModeSinglePlayer) {
-
+		game.setup(null);
 	} else {
-
+		game.setup(this._playerManager);
 	}
 
+	// show/hide elements and start the game
 	$('#main > h1').hide();
-    game.setup();
     game.startGame();
     $('#game').show();
 }
@@ -137,36 +142,57 @@ LoungeClass.prototype._postConnectionSetup = function() {
 	this._p2pComm.setMsgHandler(MsgTypePlayerMetaData, this, this._receivedPlayerMetaData);
 
 	// add our player to the list
-	this._addPlayerToList(playerId, playerName, false);
+	this._addPlayerToList(playerId, playerName, this._ownPlayer.getColor());
 }
 
-LoungeClass.prototype._addPlayerToList = function(id, playerName, isRemotePlayer) {
+LoungeClass.prototype._addPlayerToList = function(id, playerName, playerColor) {
 	var playerNameField = $('#playerlist_id_' + id);
 
 	// create a new remote player object
-	if (isRemotePlayer) {
+	if (playerColor === null) {	// it must be a remote player
 		if (this._playerManager.playerExists(id)) {
 			this._playerManager.removePlayer(id);
 			if (playerNameField) playerNameField.detach();
 		}
 
+		// create a new remote player and set its properties
 		var remotePlayer = new PlayerClass(PlayerTypeRemote);
 		remotePlayer.setId(id).setName(playerName);
-		this._playerManager.addPlayer(remotePlayer);
+		playerColor = PlayerColors[this._playerManager.getPlayers().length];	// set a color depending on the index
+		remotePlayer.setColor(playerColor);	
+		this._playerManager.addPlayer(remotePlayer);	// add it to the player manager
 	}
 
 	// create the new element
 	var list = $('#playerlist > ul');
 	var htmlId = 'playerlist_id_' + id;
-	var elem = '<li id="' + htmlId + '" class="not_ok">' + playerName + '</li>';
+	var elem = '<li id="' + htmlId + '" class="not_ok"><span style="background-color:' + playerColor + '">&nbsp;&nbsp;&nbsp;</span>&nbsp;' + playerName + '</li>';
 	list.append(elem);
 }
 
 LoungeClass.prototype._updatePlayerList = function(id, playerName, status) {
-	var elem = $('#playerlist_id_' + id);
+	// update player data in player manager
 	this._playerManager.getPlayer(id).setName(playerName).setStatus(status);
 
-	elem.text(playerName);
+	// check everybody's status
+	var players = this._playerManager.getPlayers();
+	var numReady = 0;
+	var numPlayers = players.length;
+	for (var i = 0; i < numPlayers; i++) {
+		if (players[i].getStatus() === PlayerStatusReady) {
+			numReady++;
+		}
+	}
+
+	if (numReady === numPlayers) {	// everybody's ready!!
+		$('#lounge').hide();
+		init('game');				// so let's start the game
+	}
+
+	// update html
+	var elem = $('#playerlist_id_' + id);
+	var children = elem.children();
+	elem.html('&nbsp;' + playerName).prepend(children);
 
 	if (status === PlayerStatusNotReady) {
 		elem.removeClass('ok').addClass('not_ok');
@@ -202,7 +228,7 @@ LoungeClass.prototype._receivedPlayerMetaData = function(conn, msg) {
 		} else {	// add this player to the list and send hin some information
 			this._p2pComm.sendKnownPeers(msg.id);
 			this._sendOwnStatus(msg.id);
-			this._addPlayerToList(msg.id, msg.name, true);
+			this._addPlayerToList(msg.id, msg.name, null);
 		}
 	}
 }
