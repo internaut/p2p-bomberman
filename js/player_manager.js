@@ -148,7 +148,7 @@ PlayerManagerClass.prototype._spawnAllPlayersMP = function() {
     this._playersSpawned = false;
 
     // find a random start time for choosing a spawn point
-    var randMs = Math.random() * 400 + 200;
+    var randMs = Math.random() * 800 + 200;
     this._chooseSpawnPointTimeoutHndl = window.setTimeout(function() {
         this._chooseSpawnPoints();
     }.bind(this), randMs);
@@ -157,7 +157,7 @@ PlayerManagerClass.prototype._spawnAllPlayersMP = function() {
 PlayerManagerClass.prototype._chooseSpawnPoints = function() {
     if (this._playersSpawned) return;
     this._playersSpawned = true;
-    
+
     var spawnPointsCopy = this._map.getSpawnPoints().slice();   // get copy of spawnpoints
     spawnPointsCopy.shuffle();
 

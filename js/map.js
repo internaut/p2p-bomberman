@@ -12,8 +12,9 @@ var MapColors = new Object();
 MapColors['X'] = 'darkgrey';	// indistructable cell
 MapColors['x'] = 'white';		// distructable cell
 MapColors[' '] = 'black';		// free cell
-MapColors['P'] = 'red';			// player spawn point
-								// additional type: 'B' for bomb
+// MapColors['U'] = 'red';		
+								// additional types: 'B' for bomb
+								// 					 'U' for upgrade	(increases bomb strength)
 
 var MapGridColor = 'grey';			// grid line color
 
@@ -53,7 +54,7 @@ function mapCellType(x, y) {
  */
 function mapCellIsFree(x, y) {
 	var t = mapCellType(x, y);
-	return (t === ' ' || t === 'P' || t === 'B');
+	return (t === ' ' || t === 'P' || t === 'U');
 }
 
 /**
@@ -75,6 +76,8 @@ MapClass.constructor = MapClass;
 function MapClass() {
 	var w = MapDimensions.w;
 	var h = MapDimensions.h;
+
+	this._p2pComm = null;
 	
 	// create array of possible spawn points.
 	this._spawnPoints = new Array();
@@ -85,6 +88,11 @@ function MapClass() {
 			}
 		}
 	}
+}
+
+MapClass.prototype.setP2PComm = function(p2pCommRef) {
+	this._p2pComm = p2pCommRef;
+    this._p2pComm.setMsgHandler(MsgTypePlayerUpgrade,   this, this.receivedUpgradeMsg);
 }
 
 /**
@@ -105,8 +113,10 @@ MapClass.prototype.draw = function() {
 	for (var y = 0; y < h; y++) {
 		for (var x = 0; x < w; x++) {
 			var cellType = MapData[y * w + x];
-			if (cellType != ' ' && cellType != 'P' && cellType != 'B') {
+			if (cellType !== ' ' && cellType !== 'P' && cellType !== 'B' && cellType !== 'U') {
 				this._view.drawCell(x, y, MapColors[cellType]);
+			} else if (cellType === 'U') {
+				this._view.drawUpgradeItem(x, y, 10, 'yellow');
 			}
 		}
 	}
@@ -121,4 +131,8 @@ MapClass.prototype.draw = function() {
 		var xCoord = x * this._view.cellW;
 		this._view.line(xCoord, 0, xCoord, h * this._view.cellH, MapGridColor);
 	}
+}
+
+MapClass.prototype.receivedUpgradeMsg = function(conn, msg) {
+	mapCellSet(msg.pos[0], msg.pos[1], 'U');
 }

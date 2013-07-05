@@ -7,6 +7,7 @@
 var Conf = {
 	maxNumPlayers: 4,
 	maxBombStrength: 5,
+	upgradePossibility: 0.25,
 	bombTimerMs: 2000,
 	moveKeyRepeatTimeMs: 100,
 	bombKeyRepeatTimeMs: 500,

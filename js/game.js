@@ -44,6 +44,10 @@ GameClass.prototype.setup = function(playerManagerRef, p2pCommRef) {
     this._view.setup(MapDimensions.w, MapDimensions.h);
     this._map.setup(this._view);
 
+    if (gameMode === GameModeMultiPlayer) {
+		this._map.setP2PComm(this._p2pComm);
+    }
+
     // set up the player manager
     this._playerManager.setup(this._map, this._p2pComm);
 }

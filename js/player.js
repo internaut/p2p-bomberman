@@ -63,9 +63,11 @@ PlayerClass.prototype.setup = function(viewRef, playerManagerRef, p2pRef) {
     this.parent.setup.call(this, viewRef);   // parent call
 
     this._playerManager = playerManagerRef;
+
+    // set p2p class and our message handlers
     this._p2pComm = p2pRef;
-    this._p2pComm.setMsgHandler(MsgTypePlayerPos, this, this.receivePos);
-    this._p2pComm.setMsgHandler(MsgTypePlayerBomb, this, this.receiveBomb);
+    this._p2pComm.setMsgHandler(MsgTypePlayerPos,  this, this.receivePos, true);
+    this._p2pComm.setMsgHandler(MsgTypePlayerBomb, this, this.receiveBomb, true);
 }
 
 /**
@@ -88,6 +90,7 @@ PlayerClass.prototype.setType = function(t) {
  * Set the player alive status to <v> true/false.
  */
 PlayerClass.prototype.setAlive = function(v) {
+    // set the status
     this._alive = v;
 
     return this;
@@ -195,6 +198,8 @@ PlayerClass.prototype.getBombStrength = function() {
 PlayerClass.prototype.increaseBombStrength = function() {
     if (this._bombStrength < Conf.maxBombStrength) {
         this._bombStrength++;
+
+        console.log('bomb strength of player ' + this._id + ' is now ' + this._bombStrength);
     }
 }
 
@@ -226,6 +231,7 @@ PlayerClass.prototype.moveBy = function(dX, dY) {
             this.sendPos(destX, destY);
         }
         this.set(destX, destY);         // set the position
+        this._checkDestinationCell(destX, destY);
     }
 }
 
@@ -245,7 +251,7 @@ PlayerClass.prototype.dropBomb = function() {
 
 PlayerClass.prototype._dropBombByPlayer = function(player) {
     var bomb = new BombClass();
-    bomb.setup(this._view, this._playerManager);
+    bomb.setup(this._view, this._playerManager, this._p2pComm);
     bomb.dropByPlayer(player);
 }
 
@@ -268,11 +274,14 @@ PlayerClass.prototype.sendPos = function(x, y) {
  * Receive a position message and interpret it.
  */
 PlayerClass.prototype.receivePos = function(conn, msg) {
+    // console.log('received pos of player ' + msg.id + ': ' + msg.pos[0] + ', ' + msg.pos[1]);
+    // console.log('> this player is ' + this._id + ' with type ' + this._type);
     if (this._type !== PlayerTypeRemote // ONLY for remote players
      || msg.id !== this._id) return;    // ONLY if the ids match
 
     // set the position
     this.set(msg.pos[0], msg.pos[1]);
+    this._checkDestinationCell(msg.pos[0], msg.pos[1]);
 }
 
 /**
@@ -300,3 +309,19 @@ PlayerClass.prototype.receiveBomb = function(conn, msg) {
     // let the player drop the bomb
     this._dropBombByPlayer(this);
 }
+
+PlayerClass.prototype._checkDestinationCell = function(destX, destY) {
+    if (mapCellType(destX, destY) === 'U') {
+        this.increaseBombStrength();
+        mapCellSet(destX, destY, ' ');
+    }
+}
+
+// PlayerClass.prototype.receiveUpgrade = function(conn, msg) {
+//     if (this._type !== PlayerTypeRemote // ONLY for remote players
+//      || msg.id !== this._id) return;    // ONLY if the ids match
+
+//     // increase our bomb strength
+//     this.increaseBombStrength(false);
+//     mapCellSet(msg.pos[0], msg.pos[1], ' ');
+// }

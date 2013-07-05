@@ -10,6 +10,7 @@ var MsgTypePlayerMetaData   = 1;
 var MsgTypePlayerPos        = 2;
 var MsgTypePlayerSpawnPoint = 3;
 var MsgTypePlayerBomb       = 4;
+var MsgTypePlayerUpgrade    = 5;
 
 /**
  * P2P communication constructor. 
@@ -134,8 +135,32 @@ P2PCommClass.prototype.disconnectFromPeer = function(peerId) {
     this._conn[peerId].peerjs.close();
 }
 
-P2PCommClass.prototype.setMsgHandler = function(type, cbObj, cbFn) {
-    this._msgHandler[type] = {fn: cbFn, obj: cbObj};
+P2PCommClass.prototype.setMsgHandler = function(type, cbObj, cbFn, add) {
+    add = (typeof add === 'undefined') ? false : add;
+
+    var newHndl = {fn: cbFn, obj: cbObj};
+
+    if (add) {
+        console.log('adding msg handler for type ' + type);
+        if (this._msgHandler[type] instanceof Array === false) {   // convert to array
+            var oldHndl = null;
+            if (typeof this._msgHandler[type] !== 'undefined') {
+                oldHndl = this._msgHandler[type];
+            }
+
+            this._msgHandler[type] = new Array();
+            
+            if (oldHndl) {
+                this._msgHandler[type].push(oldHndl);
+                console.log('pushed old handler:' + oldHndl);
+            }
+        }
+
+        this._msgHandler[type].push(newHndl);
+        console.log('pushed new handler:' + newHndl);
+    } else {
+        this._msgHandler[type] = newHndl;
+    }
 }
 
 P2PCommClass.prototype.setConnEstablishingHandler = function(cbObj, cbFnJoining, cbFnJoined, cbFnError) {
@@ -252,7 +277,13 @@ P2PCommClass.prototype._incomingData = function(conn, msg) {
     var hndl = this._msgHandler[msg.type];
 
     if (hndl) {
-        hndl.fn.call(hndl.obj, conn, msg);    // call the handler functon hndl.fn on object hndl.obj with parameter msg
+        if (hndl instanceof Array === true) {
+            for (var i = 0; i < hndl.length; i++) {
+                hndl[i].fn.call(hndl[i].obj, conn, msg);    // call the handler functon hndl.fn on object hndl.obj with parameter msg
+            }
+        } else {
+            hndl.fn.call(hndl.obj, conn, msg);    // call the handler functon hndl.fn on object hndl.obj with parameter msg
+        }
     } else {
         console.err('no msg handler for type ' + msg.type);
     }

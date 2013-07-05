@@ -21,6 +21,7 @@ function BombClass() {
     this._timerMs = Conf.bombTimerMs;       // bomb timer
     this._strength = 0;         // bomb strength in cells
     this._playerManager = null; // ref. to PlayerManagerClass
+    this._p2pComm = null;       // ref. to P2PCommClass
 
     this._exploding 	= false;// is true while explosion animation is running
     this._explBlocked	= null;	// blocked explosion directions
@@ -35,10 +36,11 @@ function BombClass() {
 /**
  * Setup a bomb and set the view and player manager references.
  */
-BombClass.prototype.setup = function(viewRef, playerManagerRef) {
+BombClass.prototype.setup = function(viewRef, playerManagerRef, p2pCommRef) {
     this.parent.setup.call(this, viewRef);   // parent call
 
     this._playerManager = playerManagerRef;
+    this._p2pComm = p2pCommRef;
 }
 
 /**
@@ -137,7 +139,7 @@ BombClass.prototype._checkPlayerHits = function(ex, ey) {
         var player = players[i];
         if (player.getAlive() === true && player.x === ex && player.y === ey) {
             player.setAlive(false);
-            this._owner.increaseBombStrength();
+            // this._owner.increaseBombStrength();
             this._playerManager.checkGameStatus();
         }
     }
@@ -188,7 +190,21 @@ BombClass.prototype._drawExplAnim = function() {
             }
 
             if (cellType === 'x') { // break this!
-                mapCellSet(posX, posY, ' ');
+                var newType = ' ';
+                if (this._owner.getType() !== PlayerTypeRemote  // if this bomb is owned by the local player
+                 && Math.random() < Conf.upgradePossibility) {  // and we're lucky
+                    newType = 'U';  // set an upgrade in this cell
+
+                    // bring the news to our peers
+                    var msg = {
+                        id:     this._owner.getId(),
+                        type:   MsgTypePlayerUpgrade,
+                        pos:    new Array(posX, posY)
+                    };
+                    this._p2pComm.sendAll(msg);
+                }
+
+                mapCellSet(posX, posY, newType);    // maybe we find an upgrade underneath?
             }
 
             //console.log('drawing explosion in cell ' + posX + ', ' + posY);

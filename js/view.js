@@ -108,6 +108,27 @@ ViewClass.prototype.drawCell = function(x, y, style) {
 //     this.rect(x * this.cellW + margin, y * this.cellH + margin, w, h, style);
 // }
 
+ViewClass.prototype.drawUpgradeItem = function(x, y, margin, style) {
+    var ctx = this._ctx;
+
+    var l   = this.cellW * x + margin;
+    var r   = l + this.cellW - 2 * margin;
+    var hM  = l + this.cellW_2 - margin;
+    var t   = this.cellH * y + margin;
+    var b   = t + this.cellH - 2 * margin;
+    var vM  = t + this.cellH_2 - margin;
+
+    ctx.lineWidth = 10.0;
+    ctx.strokeStyle = style;
+
+    ctx.beginPath();
+    ctx.moveTo(hM, t);
+    ctx.lineTo(hM, b);
+    ctx.moveTo(l, vM);
+    ctx.lineTo(r, vM);
+    ctx.stroke();
+}
+
 /**
  * Function to draw a cell rhombus at cell position <x>, <y>
  * with a <style> and a <margin>.
@@ -121,7 +142,7 @@ ViewClass.prototype.drawCellRhombus = function(x, y, margin, style) {
     var hM  = l + this.cellW_2 - margin;
     var t   = this.cellH * y + margin;
     var b   = t + this.cellH - 2 * margin;
-    var vM  = t + this.cellW_2 - margin;
+    var vM  = t + this.cellH_2 - margin;
 
     // draw its lines
     ctx.beginPath();
