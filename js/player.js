@@ -49,7 +49,9 @@ function PlayerClass(type) {
     this._alive = true;         // status
     this._status = PlayerStatusNotReady;    // ready/not ready
     this._type = type;          // type
+    this._spawnPoint = null;    // spawn point with x and y coord. in array of size 2
     this._playerManager = null; // ref. to PlayerManagerClass
+    this._p2pComm = null;       // P2P Communication Class (only MP)
 
     this._bombStrength = 1;     // bomb strength given to the bombs of this player
 }
@@ -57,10 +59,12 @@ function PlayerClass(type) {
 /**
  * Setup a bomb and set the view and player manager references.
  */
-PlayerClass.prototype.setup = function(viewRef, playerManagerRef) {
+PlayerClass.prototype.setup = function(viewRef, playerManagerRef, p2pRef) {
     this.parent.setup.call(this, viewRef);   // parent call
 
     this._playerManager = playerManagerRef;
+    this._p2pComm = p2pRef;
+    this._p2pComm.setMsgHandler(MsgTypePlayerPos, this, this.receivePos);
 }
 
 /**
@@ -160,6 +164,24 @@ PlayerClass.prototype.setColor = function(c) {
 }
 
 /**
+ * Will set the spawn point and the current entity coordinates
+ * to <p[0]>, <p[1]>
+ */
+PlayerClass.prototype.setSpawnPoint = function(p) {
+    this._spawnPoint = new Array(p[0], p[1]);   // copy
+    this.set(p[0], p[1]);
+
+    return this;
+}
+
+/**
+ * Return the spawn point
+ */
+PlayerClass.prototype.getSpawnPoint = function() {
+    return this._spawnPoint;
+}
+
+/**
  * Return the bomb strength of this player.
  */
 PlayerClass.prototype.getBombStrength = function() {
@@ -199,6 +221,9 @@ PlayerClass.prototype.moveBy = function(dX, dY) {
     if (destY < 0 || destY >= MapDimensions.h) destY = this.y;
 
     if (mapCellIsFree(destX, destY)) {  // check if the cell is free
+        if (gameMode === GameModeMultiPlayer) {
+            this.sendPos(destX, destY);
+        }
         this.set(destX, destY);         // set the position
     }
 }
@@ -212,4 +237,32 @@ PlayerClass.prototype.dropBomb = function() {
     var bomb = new BombClass();
     bomb.setup(this._view, this._playerManager);
     bomb.dropByPlayer(this);
+}
+
+/**
+ * Send our position to the peers (MP only).
+ */
+PlayerClass.prototype.sendPos = function(x, y) {
+    if (this._type === PlayerTypeRemote) return;    // NOT for remote players
+
+    var msg = {
+        id:     this._id,
+        type:   MsgTypePlayerPos,
+        pos:    new Array(x, y)
+    };
+
+    this._p2pComm.sendAll(msg);
+}
+
+/**
+ * Receive a position message and interpret it.
+ */
+PlayerClass.prototype.receivePos = function(conn, msg) {
+    console.log('received player position of player ' + msg.id + ' and i am ' + this._type + ' with id ' + this._id);
+
+    if (this._type !== PlayerTypeRemote // ONLY for remote players
+     || msg.id !== this._id) return;    // ONLY if the ids match
+
+    // set the position
+    this.set(msg.pos[0], msg.pos[1]);
 }

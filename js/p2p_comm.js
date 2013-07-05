@@ -7,6 +7,8 @@
 
 var MsgTypeKnownPeers       = 0;
 var MsgTypePlayerMetaData   = 1;
+var MsgTypePlayerPos        = 2;
+var MsgTypePlayerSpawnPoint = 3;
 
 /**
  * P2P communication constructor. 

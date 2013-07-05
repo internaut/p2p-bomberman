@@ -13,14 +13,19 @@ function PlayerManagerClass() {
     this._players = new Object();   // will hold all players with mapping id -> PlayerClass object
 
     this._map = null;               // ref. to MapClass.
+    this._p2pComm = null;           // ref. to P2PCommClass (for MP only)
+    this._chooseSpawnPointTimeoutHndl = null;   // handle for timeout of chooseSpawnPoint function (MP only)
+    this._playersSpawned = false;
+//    this._leftSpawnPoints = null;   // spawn points that have not been chosen yet by other peers
 }
 
 
 /**
  * Set up the player manager class and pass a ref. to MapClass <mapRef>.
  */
-PlayerManagerClass.prototype.setup = function(mapRef) {
-    this._map = mapRef;
+PlayerManagerClass.prototype.setup = function(mapRef, p2pCommRef) {
+    this._map       = mapRef;
+    this._p2pComm   = p2pCommRef;
 }
 
 /**
@@ -58,9 +63,9 @@ PlayerManagerClass.prototype.playerExists = function(playerId) {
 /**
  * Set up all players with a view <viewRef> and the player manager reference.
  */
-PlayerManagerClass.prototype.setupPlayers = function(viewRef) {
+PlayerManagerClass.prototype.setupPlayers = function(viewRef, p2pCommRef) {
     for (var id in this._players) {
-        this._players[id].setup(viewRef, this);
+        this._players[id].setup(viewRef, this, p2pCommRef);
     }
 }
 
@@ -111,13 +116,85 @@ PlayerManagerClass.prototype.spawnAllPlayers = function() {
         return;
     }
 
+    // spawn depending on game mode
+    if (gameMode === GameModeSinglePlayer) {
+        this._spawnAllPlayersSP(spawnPoints);
+    } else {
+        this._spawnAllPlayersMP();
+    }
+}
+
+/**
+ * Spawn all players in singleplayer mode.
+ */
+PlayerManagerClass.prototype._spawnAllPlayersSP = function(spawnPointsCopy) {
     // randomize
-    spawnPoints.shuffle();
+    spawnPointsCopy.shuffle();
 
     // spawn players
     var i = 0;
     for (var id in this._players) {
-        this.spawnPlayer(this._players[id], spawnPoints[i++]);
+        this.spawnPlayer(this._players[id], spawnPointsCopy[i++]);
+    }
+}
+
+/**
+ * Spawn all players in multiplayer mode.
+ */
+PlayerManagerClass.prototype._spawnAllPlayersMP = function() {
+    // set handler for incoming spawn point messages
+    this._p2pComm.setMsgHandler(MsgTypePlayerSpawnPoint, this, this._spawnPointMsgReceived);
+
+    this._playersSpawned = false;
+
+    // find a random start time for choosing a spawn point
+    var randMs = Math.random() * 400 + 200;
+    this._chooseSpawnPointTimeoutHndl = window.setTimeout(function() {
+        this._chooseSpawnPoints();
+    }.bind(this), randMs);
+}
+
+PlayerManagerClass.prototype._chooseSpawnPoints = function() {
+    if (this._playersSpawned) return;
+    this._playersSpawned = true;
+    
+    var spawnPointsCopy = this._map.getSpawnPoints().slice();   // get copy of spawnpoints
+    spawnPointsCopy.shuffle();
+
+    var i = 0;
+    var spawnPointsMap = new Object();
+    for (var id in this._players) {
+        var sp = spawnPointsCopy[i++];
+        spawnPointsMap[id] = sp;
+        this._players[id].setSpawnPoint(sp);
+    }
+
+    // construct the message
+    var msg = {
+        id:         this._localPlayer.getId(),
+        type:       MsgTypePlayerSpawnPoint,
+        spawnPts:   spawnPointsMap
+    };
+
+    // send to all peers
+    console.log('sending spawn point message to all');
+    this._p2pComm.sendAll(msg);
+}
+
+PlayerManagerClass.prototype._spawnPointMsgReceived = function(conn, msg) {
+    if (this._playersSpawned) return;
+    this._playersSpawned = true;
+
+    window.clearTimeout(this._chooseSpawnPointTimeoutHndl); // cancel own spawning now
+
+    console.log('received spawn point message');
+
+    // we received a map of spawn points
+    var spawnPointsMap = msg.spawnPts;
+
+    for (var id in spawnPointsMap) {
+        console.log('setting player ' + this._players[id].getName() + ' to ' + spawnPointsMap[id][0] + ',' + spawnPointsMap[id][1]);
+        this.spawnPlayer(this._players[id], spawnPointsMap[id]);
     }
 }
 
@@ -126,6 +203,5 @@ PlayerManagerClass.prototype.spawnAllPlayers = function() {
  */
 PlayerManagerClass.prototype.spawnPlayer = function(p, spawnPoint) {
     p.setAlive(true);
-
-    p.set(spawnPoint[0], spawnPoint[1]);
+    p.setSpawnPoint(spawnPoint);
 }

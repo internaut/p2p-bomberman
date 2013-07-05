@@ -97,9 +97,9 @@ LoungeClass.prototype._startGame = function() {
 
     // set up the game depending on game mode
 	if (this._gameMode === GameModeSinglePlayer) {
-		game.setup(null);
+		game.setup(null, null);
 	} else {
-		game.setup(this._playerManager);
+		game.setup(this._playerManager, this._p2pComm);
 	}
 
 	// show/hide elements and start the game
@@ -123,10 +123,11 @@ LoungeClass.prototype._errorJoiningPeer = function(err) {
 }
 
 LoungeClass.prototype._postConnectionSetup = function() {
+	// create our local player object
 	this._ownPlayer = new PlayerClass(PlayerTypeLocalKeyboardArrows);
 	var playerId = this._p2pComm.getPeerId();
 	var playerName = 'player_' + playerId;
-	this._ownPlayer.setId(playerId).setName(playerName);
+	this._ownPlayer.setId(playerId).setName(playerName);	// set its properties
 
 	// add our player to the player manager
 	this._playerManager.addPlayer(this._ownPlayer);
@@ -160,6 +161,7 @@ LoungeClass.prototype._addPlayerToList = function(id, playerName, playerColor) {
 		remotePlayer.setId(id).setName(playerName);
 		playerColor = PlayerColors[this._playerManager.getPlayers().length];	// set a color depending on the index
 		remotePlayer.setColor(playerColor);	
+		this._p2pComm.setMsgHandler(MsgTypePlayerPos, this._ownPlayer, this._ownPlayer.receivePos);	// set a handler p2p event "player position"
 		this._playerManager.addPlayer(remotePlayer);	// add it to the player manager
 	}
 

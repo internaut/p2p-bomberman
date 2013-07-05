@@ -19,6 +19,7 @@ function GameClass(mode) {
     this._map 			= null;	// MapClass object
     this._controls 		= null;	// ControlsClass object
     this._playerManager = null;	// PlayerManagerClass object
+    this._p2pComm		= null;	// P2PCommClass object (MP only)
 
 	this._mode = mode;	// game mode
 }
@@ -26,11 +27,12 @@ function GameClass(mode) {
 /**
  * Set up a new game.
  */
-GameClass.prototype.setup = function(playerManagerRef) {
+GameClass.prototype.setup = function(playerManagerRef, p2pCommRef) {
 	// create all objects
     this._view 			= new ViewClass();
     this._map 			= new MapClass();
     this._controls 		= new Array();
+    this._p2pComm 		= p2pCommRef;
 
     if (playerManagerRef === null) {
     	this._playerManager = new PlayerManagerClass();
@@ -43,7 +45,7 @@ GameClass.prototype.setup = function(playerManagerRef) {
     this._map.setup(this._view);
 
     // set up the player manager
-    this._playerManager.setup(this._map);
+    this._playerManager.setup(this._map, this._p2pComm);
 }
 
 /**
@@ -57,7 +59,7 @@ GameClass.prototype.startGame = function() {
 	if (this._mode === GameModeSinglePlayer) {
 		// init local player 1
 		var player1 = new PlayerClass(PlayerTypeLocalKeyboardArrows);
-		player1.setup(this._view, this._playerManager);
+		player1.setup(this._view, this._playerManager, null);
 		this._view.addEntity(player1);
 		this._playerManager.addPlayer(player1);
 
@@ -68,7 +70,7 @@ GameClass.prototype.startGame = function() {
 
 		// init local player 2
 		var player2 = new PlayerClass(PlayerTypeLocalKeyboardWSAD);
-		player2.setup(this._view, this._playerManager);
+		player2.setup(this._view, this._playerManager, null);
 		this._view.addEntity(player2);
 		this._playerManager.addPlayer(player2);
 
@@ -84,7 +86,7 @@ GameClass.prototype.startGame = function() {
 		this._controls.push(localPlayerControls);
 
 		// set up all players
-		this._playerManager.setupPlayers(this._view);
+		this._playerManager.setupPlayers(this._view, lounge._p2pComm);
 
 		// add the players as entities
 		var players = this._playerManager.getPlayers();
