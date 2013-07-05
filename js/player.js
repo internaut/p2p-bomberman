@@ -65,6 +65,7 @@ PlayerClass.prototype.setup = function(viewRef, playerManagerRef, p2pRef) {
     this._playerManager = playerManagerRef;
     this._p2pComm = p2pRef;
     this._p2pComm.setMsgHandler(MsgTypePlayerPos, this, this.receivePos);
+    this._p2pComm.setMsgHandler(MsgTypePlayerBomb, this, this.receiveBomb);
 }
 
 /**
@@ -234,13 +235,22 @@ PlayerClass.prototype.moveBy = function(dX, dY) {
 PlayerClass.prototype.dropBomb = function() {
     if (!this._alive || mapCellType(this.x, this.y) === 'B') return;
 
+    if (gameMode === GameModeMultiPlayer) { // send it to our peers
+        this.sendBombDrop(this.x, this.y);
+    }
+
+    // drop the bomb
+    this._dropBombByPlayer(this);
+}
+
+PlayerClass.prototype._dropBombByPlayer = function(player) {
     var bomb = new BombClass();
     bomb.setup(this._view, this._playerManager);
-    bomb.dropByPlayer(this);
+    bomb.dropByPlayer(player);
 }
 
 /**
- * Send our position to the peers (MP only).
+ * Send our position <x>, <y> to the peers (MP only).
  */
 PlayerClass.prototype.sendPos = function(x, y) {
     if (this._type === PlayerTypeRemote) return;    // NOT for remote players
@@ -258,11 +268,35 @@ PlayerClass.prototype.sendPos = function(x, y) {
  * Receive a position message and interpret it.
  */
 PlayerClass.prototype.receivePos = function(conn, msg) {
-    console.log('received player position of player ' + msg.id + ' and i am ' + this._type + ' with id ' + this._id);
-
     if (this._type !== PlayerTypeRemote // ONLY for remote players
      || msg.id !== this._id) return;    // ONLY if the ids match
 
     // set the position
     this.set(msg.pos[0], msg.pos[1]);
+}
+
+/**
+ * Send that we've dropped a bomb at <x>, <y>. Our peers should know!
+ */
+PlayerClass.prototype.sendBombDrop = function(x, y) {
+    if (this._type === PlayerTypeRemote) return;    // NOT for remote players
+
+    // we only send the event and the peer id
+    var msg = {
+        id:     this._id,
+        type:   MsgTypePlayerBomb
+    };
+
+    this._p2pComm.sendAll(msg);
+}
+
+/**
+ * Receive a "bomb has been dropped" message and interpret it.
+ */
+PlayerClass.prototype.receiveBomb = function(conn, msg) {
+    if (this._type !== PlayerTypeRemote // ONLY for remote players
+     || msg.id !== this._id) return;    // ONLY if the ids match
+
+    // let the player drop the bomb
+    this._dropBombByPlayer(this);
 }
