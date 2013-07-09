@@ -5,7 +5,7 @@ This is an implementation of the popular bomberman game for browsers using HTML5
 
 This game uses the [peer.js](http://peerjs.com) library and requires you to have a running peer.js-server.
 
-*Please note:* This is just a showcase. The software contains some bugs as well as WebRTC itself is not fully implemented in the browsers and a lot a features are missing. For example, Firefox and Chrome can still not talk to each other via a RTCDataChannel.
+*Please note:* This is just a showcase. The software contains some bugs as well as WebRTC itself is not fully implemented in the browsers and a lot a features are missing. For example, Firefox and Chrome can still not talk to each other via a RTCDataChannel. Also note that the Singleplayer Mode is currently broken.
 
 License
 -------
