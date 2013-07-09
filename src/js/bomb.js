@@ -195,13 +195,15 @@ BombClass.prototype._drawExplAnim = function() {
                  && Math.random() < Conf.upgradePossibility) {  // and we're lucky
                     newType = 'U';  // set an upgrade in this cell
 
-                    // bring the news to our peers
-                    var msg = {
-                        id:     this._owner.getId(),
-                        type:   MsgTypePlayerUpgrade,
-                        pos:    new Array(posX, posY)
-                    };
-                    this._p2pComm.sendAll(msg);
+                    if (gameMode === GameModeMultiplayer) {
+                        // bring the news to our peers
+                        var msg = {
+                            id:     this._owner.getId(),
+                            type:   MsgTypePlayerUpgrade,
+                            pos:    new Array(posX, posY)
+                        };
+                        this._p2pComm.sendAll(msg);
+                    }
                 }
 
                 mapCellSet(posX, posY, newType);    // maybe we find an upgrade underneath?

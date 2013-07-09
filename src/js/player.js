@@ -65,9 +65,11 @@ PlayerClass.prototype.setup = function(viewRef, playerManagerRef, p2pRef) {
     this._playerManager = playerManagerRef;
 
     // set p2p class and our message handlers
-    this._p2pComm = p2pRef;
-    this._p2pComm.setMsgHandler(MsgTypePlayerPos,  this, this.receivePos, true);
-    this._p2pComm.setMsgHandler(MsgTypePlayerBomb, this, this.receiveBomb, true);
+    if (p2pRef) {
+        this._p2pComm = p2pRef;
+        this._p2pComm.setMsgHandler(MsgTypePlayerPos,  this, this.receivePos, true);
+        this._p2pComm.setMsgHandler(MsgTypePlayerBomb, this, this.receiveBomb, true);
+    }
 }
 
 /**
