@@ -195,7 +195,7 @@ BombClass.prototype._drawExplAnim = function() {
                  && Math.random() < Conf.upgradePossibility) {  // and we're lucky
                     newType = 'U';  // set an upgrade in this cell
 
-                    if (gameMode === GameModeMultiplayer) {
+                    if (gameMode === GameModeMultiPlayer) {
                         // bring the news to our peers
                         var msg = {
                             id:     this._owner.getId(),
