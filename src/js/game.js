@@ -28,7 +28,7 @@ function GameClass(mode) {
  * Set up a new game.
  */
 GameClass.prototype.setup = function(playerManagerRef, p2pCommRef) {
-	// create all objects
+	// create all objects or set references to them
     this._view 			= new ViewClass();
     this._map 			= new MapClass();
     this._controls 		= new Array();
@@ -86,7 +86,7 @@ GameClass.prototype.startGame = function() {
 		var player2Controls = new ControlsClass();
 		player2Controls.setup(player2, Conf.wsadKeyMapping);
 		this._controls.push(player2Controls);
-	} else {
+	} else {	// initialize game in multi player mode
 		// set up the local player
 		var localPlayer = this._playerManager.getLocalPlayer();
 		var localPlayerControls = new ControlsClass();
@@ -114,14 +114,14 @@ GameClass.prototype.startGame = function() {
  * Stop the game.
  */
 GameClass.prototype.stopGame = function() {
-
+	// not implemented yet.
 }
 
 /**
  * Game round ended.
  */
 GameClass.prototype.roundEnded = function() {
-	console.log('round ended');
+	// not implemented yet.
 }
 
 /**

@@ -90,8 +90,14 @@ function MapClass() {
 	}
 }
 
+/**
+ * Set the P2PCommClass reference to <p2pCommRef> and set a message handler
+ * for receiving upgrade messages.
+ */
 MapClass.prototype.setP2PComm = function(p2pCommRef) {
 	this._p2pComm = p2pCommRef;
+
+	// set a message handler for "upgrade" messages
     this._p2pComm.setMsgHandler(MsgTypePlayerUpgrade,   this, this.receivedUpgradeMsg);
 }
 
@@ -112,27 +118,36 @@ MapClass.prototype.draw = function() {
 	// draw cells
 	for (var y = 0; y < h; y++) {
 		for (var x = 0; x < w; x++) {
+			// get cell type at cell x, y
 			var cellType = MapData[y * w + x];
-			if (cellType !== ' ' && cellType !== 'P' && cellType !== 'B' && cellType !== 'U') {
+
+			if (cellType === 'X' || cellType === 'x') {	// draw "blocking" cell types
 				this._view.drawCell(x, y, MapColors[cellType]);
-			} else if (cellType === 'U') {
+			} else if (cellType === 'U') {				// draw upgrade item
 				this._view.drawUpgradeItem(x, y, 10, 'yellow');
 			}
 		}
 	}
 
-	// draw grid
+	// draw grid horizontally
 	for (var y = 0; y < h; y++) {
 		var yCoord = y * this._view.cellH;
 		this._view.line(0, yCoord, w * this._view.cellW, yCoord, MapGridColor);
 	}
 
+	// draw grid vertically
 	for (var x = 0; x < w; x++) {
 		var xCoord = x * this._view.cellW;
 		this._view.line(xCoord, 0, xCoord, h * this._view.cellH, MapGridColor);
 	}
 }
 
+/**
+ * P2P message handler function for receiving a message <msg> from connection <conn>
+ * of type MsgTypePlayerUpgrade. It will set a cell type to "upgrade" for the position
+ * contained in the message.
+ */
 MapClass.prototype.receivedUpgradeMsg = function(conn, msg) {
+	// set to cell type 'U' (upgrade item) at the submitted position.
 	mapCellSet(msg.pos[0], msg.pos[1], 'U');
 }
