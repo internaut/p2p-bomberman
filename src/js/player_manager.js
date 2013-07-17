@@ -15,8 +15,7 @@ function PlayerManagerClass() {
     this._map = null;               // ref. to MapClass.
     this._p2pComm = null;           // ref. to P2PCommClass (for MP only)
     this._chooseSpawnPointTimeoutHndl = null;   // handle for timeout of chooseSpawnPoint function (MP only)
-    this._playersSpawned = false;
-//    this._leftSpawnPoints = null;   // spawn points that have not been chosen yet by other peers
+    this._playersSpawned = false;   // is true when the players are already spawned
 }
 
 
@@ -40,7 +39,7 @@ PlayerManagerClass.prototype.getPlayers = function() {
 }
 
 /**
- * Return a specific player identified by <playerId>
+ * Return a specific player identified by <playerId>.
  */
 PlayerManagerClass.prototype.getPlayer = function(playerId) {
     return this._players[playerId];
@@ -73,9 +72,10 @@ PlayerManagerClass.prototype.setupPlayers = function(viewRef, p2pCommRef) {
  * Add a new player to the game.
  */
 PlayerManagerClass.prototype.addPlayer = function(p) {
-    this._players[p.getId()] = p;
+    this._players[p.getId()] = p;   // mapping of id -> player object
 
-    if (p.getType() === PlayerTypeLocalKeyboardArrows || p.getType() === PlayerTypeLocalKeyboardWSAD) {
+    if (p.getType() === PlayerTypeLocalKeyboardArrows
+     || p.getType() === PlayerTypeLocalKeyboardWSAD) {  // this is a local player so set it as local player
         this._localPlayer = p;
     }
 }
@@ -93,11 +93,13 @@ PlayerManagerClass.prototype.removePlayer = function(playerId) {
  * Check if the game is over or not.
  */
 PlayerManagerClass.prototype.checkGameStatus = function() {
+    // check how many are still alive
     var numAlive = 0;
     for (var i in this._players) {
         if (this._players[i].getAlive() === true) numAlive++;
     }
 
+    // no one's alive so the round ended
     if (numAlive === 0) {
         game.roundEnded();
     }
@@ -140,7 +142,9 @@ PlayerManagerClass.prototype._spawnAllPlayersSP = function(spawnPointsCopy) {
 }
 
 /**
- * Spawn all players in multiplayer mode.
+ * Spawn all players in multiplayer mode. After a random time one peer will create and
+ * send an array with spawn points for each player and send it to all other peers. Only
+ * the first peer who's doing this will "dictate" the spawn points.
  */
 PlayerManagerClass.prototype._spawnAllPlayersMP = function() {
     // set handler for incoming spawn point messages
@@ -155,13 +159,19 @@ PlayerManagerClass.prototype._spawnAllPlayersMP = function() {
     }.bind(this), randMs);
 }
 
+/**
+ * This function will be called after a random time to create
+ * an array with spawn points for each player and send it to all other peers.
+ */
 PlayerManagerClass.prototype._chooseSpawnPoints = function() {
-    if (this._playersSpawned) return;
-    this._playersSpawned = true;
+    if (this._playersSpawned) return;   // the players were already spawned, so don't do anything
+    this._playersSpawned = true;        // set the new status. this function will thereby only be called once (if at all)
 
     var spawnPointsCopy = this._map.getSpawnPoints().slice();   // get copy of spawnpoints
-    spawnPointsCopy.shuffle();
+    spawnPointsCopy.shuffle();  // shuffle them
 
+    // assign a spawn point to each player and create a spawn point
+    // map with mapping peer id -> spawnpoint.
     var i = 0;
     var spawnPointsMap = new Object();
     for (var id in this._players) {
@@ -182,17 +192,22 @@ PlayerManagerClass.prototype._chooseSpawnPoints = function() {
     this._p2pComm.sendAll(msg);
 }
 
+/**
+ * P2P message handler callback for type MsgTypePlayerSpawnPoint.
+ * If we receive this message, another peer was the first to send the
+ * message points. So we will not intend to send our own spawn points
+ * and except his point of view.
+ */
 PlayerManagerClass.prototype._spawnPointMsgReceived = function(conn, msg) {
-    if (this._playersSpawned) return;
-    this._playersSpawned = true;
+    if (this._playersSpawned) return;   // the players were already spawned, so don't do anything
+    this._playersSpawned = true;        // set the new status. this function will thereby only be called once
 
     window.clearTimeout(this._chooseSpawnPointTimeoutHndl); // cancel own spawning now
 
     console.log('received spawn point message');
 
-    // we received a map of spawn points
+    // we received a map of spawn points. now spawn all players.
     var spawnPointsMap = msg.spawnPts;
-
     for (var id in spawnPointsMap) {
         console.log('setting player ' + this._players[id].getName() + ' to ' + spawnPointsMap[id][0] + ',' + spawnPointsMap[id][1]);
         this.spawnPlayer(this._players[id], spawnPointsMap[id]);
