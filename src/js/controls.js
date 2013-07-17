@@ -1,6 +1,7 @@
 /**
  * P2P-Bomberman game controls class.
  * Handles game controls input events for a specified PlayerClass object.
+ * Requires the jquery.hotkeys.js Plugin.
  *
  * Author: Markus Konrad <post@mkonrad.net>
  */

@@ -1,10 +1,17 @@
 /**
  * P2P-Bomberman game lounge class.
- * Handles pre-game management.
+ * Handles pre-game management. Especially in multiplayer mode
+ * this means we have a lot of things to do:
+ * * creating a peer
+ * * maybe joining a peer
+ * * handling peer status messages
+ * * handling peer connection/disconnection events
+ * * etc.
  *
  * Author: Markus Konrad <post@mkonrad.net>
  */
 
+// callback for game start
 var postGameStartCallback = null;
 
 function LoungeClass(mode) {
@@ -22,9 +29,10 @@ function LoungeClass(mode) {
 LoungeClass.prototype.setup = function(joinId) {
 	console.log('Setting up lounge in mode ' + this._gameMode + ' and join id ' + joinId);
 
+	// set callback for game start
 	postGameStartCallback = {obj: this, fn: this._startGame};
 
-	// show necessary elements
+	// show necessary elements depending on game mode
 	if (this._gameMode === GameModeSinglePlayer) {
 		this._setupSP();
 	} else {
@@ -40,9 +48,9 @@ LoungeClass.prototype._setupSP = function() {
 	$('#singleplayer_conf').show();
 
 	// bind handlers
-	$('#singleplayer_start_btn').click(function() {
+	$('#singleplayer_start_btn').click(function() {	// click on 'Go!' button
 		$('#lounge').hide();
-		init('game');
+		init('game');	// start the game
 	}.bind(this));
 }
 
@@ -56,10 +64,10 @@ LoungeClass.prototype._setupMP = function(joinId) {
 	$('#name').attr('disabled');
 
 	// bind handlers
-	$('#name').change(function() {
+	$('#name').change(function() {						// change of the "name" text field
 		this._nameChanged($('#name').val());
 	}.bind(this));
-	$('#ready').change(function() {
+	$('#ready').change(function() {						// change of the "ready" checkbox field
 		this._statusChanged($('#ready:checked').val());
 	}.bind(this));
 
@@ -70,19 +78,25 @@ LoungeClass.prototype._setupMP = function(joinId) {
 	this._p2pComm = new P2PCommClass();
 	this._p2pComm.setup();
 
+	// set initial status
 	$('#player_conn_status').text('receiving peer id...');
-	this._p2pComm.createPeer(function(id){
+
+	// create a peer
+	this._p2pComm.createPeer(function(id){	// success action for creating a new peer
 		this.player_id = id;
 		$('#player_id').text(this.player_id);	// set the player id when we got it from the server.
+
+		// set the new status
 		$('#player_conn_status').text('awaiting connections');
 		$('#player_conn_status').removeClass('status_unknown').addClass('ok');
 
+		// do the post connection setup
 		this._postConnectionSetup();
 
 		if (joinId !== 0) {	// join a player
 			this._p2pComm.joinPeer(joinId);
 		}
-	}.bind(this), function(err) {
+	}.bind(this), function(err) {			// error action for creating a new peer
 		$('#player_conn_status').text('oops!');
 		$('#player_conn_status').removeClass('status_unknown').addClass('not_ok');
 	}.bind(this));
@@ -108,25 +122,40 @@ LoungeClass.prototype._startGame = function() {
     $('#game').show();
 }
 
+/**
+ * Callback function for "joining a peer" event. <peerId> is the peer we're joining.
+ */
 LoungeClass.prototype._joiningPeer = function(peerId) {
 	$('#player_conn_status').text('joining ' + peerId + '...');
 }
 
+/**
+ * Callback function for "joined a peer" event. <peerId> is the peer we've joined.
+ */
 LoungeClass.prototype._joinedPeer = function(peerId) {
 	$('#player_conn_status').text('awaiting connections');
+
+	// we are connected to a new player. send him our status
 	this._sendOwnStatus(peerId);
 }
 
+/**
+ * Callback function for "error while joining a peer" event. <peerId> is the peer we couldn't join.
+ */
 LoungeClass.prototype._errorJoiningPeer = function(err) {
 	$('#player_conn_status').text('oops! error joining!');
 	$('#player_conn_status').removeClass('status_unknown').addClass('not_ok');
 }
 
+/**
+ * Post connection setup. This function is called when we received a peer id.
+ * It will set all basic event handlers for peer network events.
+ */
 LoungeClass.prototype._postConnectionSetup = function() {
 	// create our local player object
 	this._ownPlayer = new PlayerClass(PlayerTypeLocalKeyboardArrows);
-	var playerId = this._p2pComm.getPeerId();
-	var playerName = 'player_' + playerId;
+	var playerId = this._p2pComm.getPeerId();		// the player id is the peer id
+	var playerName = 'player_' + playerId;			// create a default name
 	this._ownPlayer.setId(playerId).setName(playerName);	// set its properties
 
 	// add our player to the player manager
@@ -137,21 +166,31 @@ LoungeClass.prototype._postConnectionSetup = function() {
 	$('#name').removeAttr('disabled');
 
 	// set the p2p event handlers
+	// ... for connection establishing (joining, joined, error while joining)
 	this._p2pComm.setConnEstablishingHandler(this, this._joiningPeer, this._joinedPeer, this._errorJoiningPeer);
+	// ... for connection opened (another peer connected)
 	this._p2pComm.setConnOpenedHandler(this, this._playerConnected);
+	// ... for connection closed (another peer disconnected)
 	this._p2pComm.setConnClosedHandler(this, this._playerDisconnected);
+	// ... for receiving a message of type "player meta data"
 	this._p2pComm.setMsgHandler(MsgTypePlayerMetaData, this, this._receivedPlayerMetaData);
 
 	// add our player to the list
 	this._addPlayerToList(playerId, playerName, this._ownPlayer.getColor());
 }
 
+/**
+ * Add a new player with <id>, <playerName> and <playerColor> to the player list
+ * and also add him as PlayerClass instance to the PlayerManager.
+ * If <playerColor> is null, we're adding a "remote player" otherwise it is our local player.
+ */
 LoungeClass.prototype._addPlayerToList = function(id, playerName, playerColor) {
 	var playerNameField = $('#playerlist_id_' + id);
 
 	// create a new remote player object
 	if (playerColor === null) {	// it must be a remote player
-		if (this._playerManager.playerExists(id)) {
+		if (this._playerManager.playerExists(id)) {	// check if this player already exists
+			// delete him, then!
 			this._playerManager.removePlayer(id);
 			if (playerNameField) playerNameField.detach();
 		}
@@ -172,6 +211,9 @@ LoungeClass.prototype._addPlayerToList = function(id, playerName, playerColor) {
 	list.append(elem);
 }
 
+/**
+ * Update an existing player with <id> and set his new <playerName> and <status>.
+ */
 LoungeClass.prototype._updatePlayerList = function(id, playerName, status) {
 	// update player data in player manager
 	this._playerManager.getPlayer(id).setName(playerName).setStatus(status);
@@ -203,56 +245,88 @@ LoungeClass.prototype._updatePlayerList = function(id, playerName, status) {
 	}
 }
 
+/**
+ * Callback action when the local player changed the name to <v>.
+ */
 LoungeClass.prototype._nameChanged = function(v) {
-	this._ownPlayer.setName(v);
-	this._sendOwnStatus(0);	// to all
+	this._ownPlayer.setName(v);	// set the new name
+	this._sendOwnStatus(0);	// send our new player status/name to all
+
+	// update the list
 	this._updatePlayerList(this._ownPlayer.getId(), this._ownPlayer.getName(), this._ownPlayer.getStatus());
 }
 
+/**
+ * Callback action when the local player changed the status to <v>.
+ */
 LoungeClass.prototype._statusChanged = function(v) {
+	// define the new status
 	var status = PlayerStatusNotReady;
-
 	if (v === 'ready') {
 		status = PlayerStatusReady;
 	}
-	this._ownPlayer.setStatus(status);
-	this._sendOwnStatus(0);	// to all
+
+	this._ownPlayer.setStatus(status);	// set the new status
+	this._sendOwnStatus(0);	// send our new player status/name to all
+
+	// update the list
 	this._updatePlayerList(this._ownPlayer.getId(), this._ownPlayer.getName(), this._ownPlayer.getStatus());
 }
 
+/**
+ * P2P message handler function for receiving a message <msg> from connection <conn>
+ * of type MsgTypePlayerMetaData.
+ */
 LoungeClass.prototype._receivedPlayerMetaData = function(conn, msg) {
 	if (this._playerManager.playerExists(msg.id)) {	// we already know this player
-		this._updatePlayerList(msg.id, msg.name, msg.status);
+		this._updatePlayerList(msg.id, msg.name, msg.status);	// update his data
 	} else {	// a new player connected!
 		if (this._playerManager.getPlayers().length >= Conf.maxNumPlayers) {	// we already have enough players
 			console.log('too many players - closing connection!');
 			this._p2pComm.disconnectFromPeer(msg.id);
 		} else {	// add this player to the list and send hin some information
-			this._p2pComm.sendKnownPeers(msg.id);
-			this._sendOwnStatus(msg.id);
-			this._addPlayerToList(msg.id, msg.name, null);
+			this._p2pComm.sendKnownPeers(msg.id);	// send our known peers
+			this._sendOwnStatus(msg.id);			// send our status
+			this._addPlayerToList(msg.id, msg.name, null);	// add him as new player
 		}
 	}
 }
 
+/**
+ * Send our own status (id, name, player status) to a peer <receiverId> or
+ * to all known peers if <receivedId> is 0.
+ */
 LoungeClass.prototype._sendOwnStatus = function(receiverId) {
-	// console.log('Sending own status: ' + this._ownPlayer + ' to peer ' + receiverId);
 	this._p2pComm.sendPlayerMetaData(receiverId, this._ownPlayer.getId(), this._ownPlayer.getName(), this._ownPlayer.getStatus());
 }
 
+/**
+ * P2P event handler function when a new peer with <peerId> connected.
+ */
 LoungeClass.prototype._playerConnected = function(peerId) {
 	console.log('player connected: ' + peerId);
 
+	// send this new peer some information about ourselfs!
 	this._sendOwnStatus(peerId);
 }
 
+/**
+ * P2P event handler function when a peer with <peerId> disconnected.
+ */
 LoungeClass.prototype._playerDisconnected = function(peerId) {
 	console.log('player disconnected: ' + peerId);
 
-	// remove the player from the list
-	var playerNameField = $('#playerlist_id_' + peerId);
+	// remove the player from the game
 	if (this._playerManager.playerExists(peerId)) {
+		if (this._playerManager._map && this._playerManager._map._view) {	// also remove the player from the view!
+			this._playerManager._map._view.removeEntity(this._playerManager.getPlayer(peerId));
+		}
+
+		// remove the player from the player manager
 		this._playerManager.removePlayer(peerId);
+
+		// remove the player from the player list
+		var playerNameField = $('#playerlist_id_' + peerId);
 		if (playerNameField) playerNameField.detach();
 	}
 }

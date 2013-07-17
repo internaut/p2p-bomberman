@@ -14,9 +14,10 @@ BombClass.prototype.parent = EntityClass.prototype;
 BombClass.constructor = BombClass;
 
 function BombClass() {
+    // set cell margins for bomb explosions in px
     this._initialMargin = 25;
     this._finalMargin = 5;
-    this._color = 'red';
+    this._color = 'red';        // set color
     this._owner = null;         // ref. to a PlayerClass
     this._timerMs = Conf.bombTimerMs;       // bomb timer
     this._strength = 0;         // bomb strength in cells
@@ -29,8 +30,8 @@ function BombClass() {
     this._explStartMs 	= 0;	// per wave
     this._explMaxMs		= 500;	// per wave
 
-    this._bombDropTime      = 0;
-    this._tickingBombFrame  = 0;
+    this._bombDropTime      = 0;    // timestamp in ms when the bomb was dropped
+    this._tickingBombFrame  = 0;    // ongoing ticking bomb frame counter
 }
 
 /**
@@ -60,12 +61,15 @@ BombClass.prototype.draw = function() {
 BombClass.prototype.dropByPlayer = function(player) {
 	this._owner = player;
 
+    // set bomb coordinates to the players coordinates
     var x = this._owner.x;
     var y = this._owner.y;
 
+    // the strength comes from the player
 	this._strength = this._owner.getBombStrength();
 
-    mapCellSet(x, y, 'B');  // set this cell to 'occupied by a bomb'
+    // set this cell to 'occupied by a bomb'
+    mapCellSet(x, y, 'B');
 
     // set the coordinates
 	this.set(x, y);
@@ -76,7 +80,7 @@ BombClass.prototype.dropByPlayer = function(player) {
     // set the bomb drop time
     this._bombDropTime = currentMs();
 
-    // set the timer
+    // set the timer for the explosion
 	window.setTimeout(function() { this.explode(); }.bind(this), this._timerMs);
 }
 
@@ -88,14 +92,15 @@ BombClass.prototype.explode = function() {
 
 	console.log('BOOM!');
 
-	this._exploding 	= true;
+    // start the explosion
+	this._exploding 	= true;   // will be checked in draw() function
 	this._explWave 		= 1;
 	this._explStartMs	= currentMs();
-	this._explBlocked	= new Array();
+	this._explBlocked	= new Array();   // array of blocked field directions
 }
 
 /**
- * After the eplosion animation this function will be called.
+ * After the explosion animation this function will be called.
  */
 BombClass.prototype.stopExplosion = function() {
 	console.log('BUFF!');
@@ -130,38 +135,43 @@ BombClass.prototype._explDirectionIsBlocked = function(dx, dy) {
 }
 
 /**
- *  Check if a player was hit on explosion field at position ex, ey
+ *  Check if a player was hit on explosion field at position <ex>, <ey>
  */
 BombClass.prototype._checkPlayerHits = function(ex, ey) {
     var players = this._playerManager.getPlayers();
 
+    // go through all players
     for (var i = 0; i < players.length; i++) {
         var player = players[i];
-        if (player.getAlive() === true && player.x === ex && player.y === ey) {
+        if (player.getAlive() === true && player.x === ex && player.y === ey) { // we hit a player!
             player.setAlive(false);
-            // this._owner.increaseBombStrength();
             this._playerManager.checkGameStatus();
         }
     }
 }
 
 /**
- * Draw the explosion animation.
+ * Draw the explosion animation. Explosions spread by waves.
+ * Depending on the bomb's strength, the explosions spreads to more and more fields
+ * in each direction.
  */
 BombClass.prototype._drawExplAnim = function() {
     var progress = currentMs() - this._explStartMs;
-    if (progress >= this._explMaxMs) {
-        if (this._explWave >= this._strength) {
+    if (progress >= this._explMaxMs) {  // check if we can go to the next explosion wave
+        if (this._explWave >= this._strength) { // check if we can stop the explosion
             this.stopExplosion();
             return;
         }
 
+        // go to the next wave
         this._explStartMs   = currentMs();
         this._explWave++;
     }
 
+    // progress percentage
     var progrPerc = progress / this._explMaxMs;
 
+    // go in each direction (dy, dx)
     for (var dy = -1; dy <= 1; dy++) {
         for (var dx = -1; dx <= 1; dx++) {
             if (Math.abs(dx) + Math.abs(dy) == 2) continue;     // no explosion on diagonal fields
@@ -206,21 +216,23 @@ BombClass.prototype._drawExplAnim = function() {
                     }
                 }
 
-                mapCellSet(posX, posY, newType);    // maybe we find an upgrade underneath?
+                mapCellSet(posX, posY, newType);    // set the new cell type to either free or upgrade field
             }
 
-            //console.log('drawing explosion in cell ' + posX + ', ' + posY);
+            // calculate the explosion color
             var colorR = 255 - progrPerc * 100;
             var colorG = 30 + progrPerc * 127;
             var colorA = 1.0 - progrPerc;
             style = 'rgba(' + colorR.toFixed() + ', ' + colorG.toFixed() + ', 0, ' + colorA.toFixed() + ')';
+
+            // draw the cell with the explosion color
             this._view.drawCell(posX, posY, style);
         }
     }
 }
 
 /**
- * Draw the ticking bomb animation.
+ * Draw the ticking bomb animation with a pulsating, growing bomb.
  */
 BombClass.prototype._drawTickingBombAnim = function() {
     this._tickingBombFrame = (this._tickingBombFrame + 1) % 60;

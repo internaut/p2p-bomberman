@@ -1,7 +1,7 @@
 /**
  * P2P-Bomberman player entity.
  * Implementation of a player that can be controlled locally (by ControlsClass)
- * or is controlled remotely.
+ * or is controlled remotely (by a peer).
  *
  * Author: Markus Konrad <post@mkonrad.net>
  */
@@ -41,7 +41,7 @@ PlayerClass.prototype.parent = EntityClass.prototype;
  * Contructor with <type> being one of the PlayerType* values.
  */
 function PlayerClass(type) {
-    this._margin = 5;
+    this._margin = 5;               // px margin to the cell frame
     this._color = PlayerColors[0];  // set default color
 
     this._id = 0;               // peer id
@@ -229,11 +229,12 @@ PlayerClass.prototype.moveBy = function(dX, dY) {
     if (destY < 0 || destY >= MapDimensions.h) destY = this.y;
 
     if (mapCellIsFree(destX, destY)) {  // check if the cell is free
-        if (gameMode === GameModeMultiPlayer) {
-            this.sendPos(destX, destY);
+        if (gameMode === GameModeMultiPlayer) { // in MP mode ...
+            this.sendPos(destX, destY);         // ... send the new position to all peers
         }
-        this.set(destX, destY);         // set the position
-        this._checkDestinationCell(destX, destY);
+
+        this.set(destX, destY);                     // set the position
+        this._checkDestinationCell(destX, destY);   // check if the new cell is some kind of special cell (e.g. upgrade)
     }
 }
 
@@ -251,6 +252,11 @@ PlayerClass.prototype.dropBomb = function() {
     this._dropBombByPlayer(this);
 }
 
+/**
+ * Create a new BombClass object and let it drop by <player>.
+ * <player> can be "this" player or a remote player if we received
+ * such a message.
+ */
 PlayerClass.prototype._dropBombByPlayer = function(player) {
     var bomb = new BombClass();
     bomb.setup(this._view, this._playerManager, this._p2pComm);
@@ -263,21 +269,22 @@ PlayerClass.prototype._dropBombByPlayer = function(player) {
 PlayerClass.prototype.sendPos = function(x, y) {
     if (this._type === PlayerTypeRemote) return;    // NOT for remote players
 
+    // construct the message
     var msg = {
         id:     this._id,
         type:   MsgTypePlayerPos,
-        pos:    new Array(x, y)
+        pos:    new Array(x, y)     // position as array
     };
 
+    // send it to all peers
     this._p2pComm.sendAll(msg);
 }
 
 /**
- * Receive a position message and interpret it.
+ * P2P message handler callback for type MsgTypePlayerPos.
+ * Receive a position message <msg> by connection <conn> and interpret it.
  */
 PlayerClass.prototype.receivePos = function(conn, msg) {
-    // console.log('received pos of player ' + msg.id + ': ' + msg.pos[0] + ', ' + msg.pos[1]);
-    // console.log('> this player is ' + this._id + ' with type ' + this._type);
     if (this._type !== PlayerTypeRemote // ONLY for remote players
      || msg.id !== this._id) return;    // ONLY if the ids match
 
@@ -292,17 +299,20 @@ PlayerClass.prototype.receivePos = function(conn, msg) {
 PlayerClass.prototype.sendBombDrop = function(x, y) {
     if (this._type === PlayerTypeRemote) return;    // NOT for remote players
 
-    // we only send the event and the peer id
+    // construct the message: we only send the event and the peer id
     var msg = {
         id:     this._id,
         type:   MsgTypePlayerBomb
     };
 
+    // send it to all peers
     this._p2pComm.sendAll(msg);
 }
 
 /**
- * Receive a "bomb has been dropped" message and interpret it.
+ * P2P message handler callback for type MsgTypePlayerBomb.
+ * Receive a "bomb has been dropped" message <msg> by connection <conn>
+ * and interpret it.
  */
 PlayerClass.prototype.receiveBomb = function(conn, msg) {
     if (this._type !== PlayerTypeRemote // ONLY for remote players
@@ -312,18 +322,12 @@ PlayerClass.prototype.receiveBomb = function(conn, msg) {
     this._dropBombByPlayer(this);
 }
 
+/**
+ * Check if it is special cell type on position <destX>, <destY>.
+ */
 PlayerClass.prototype._checkDestinationCell = function(destX, destY) {
-    if (mapCellType(destX, destY) === 'U') {
-        this.increaseBombStrength();
-        mapCellSet(destX, destY, ' ');
+    if (mapCellType(destX, destY) === 'U') {    // we got an upgrade here!s
+        this.increaseBombStrength();            // increase the bomb strength
+        mapCellSet(destX, destY, ' ');          // reset to free field
     }
 }
-
-// PlayerClass.prototype.receiveUpgrade = function(conn, msg) {
-//     if (this._type !== PlayerTypeRemote // ONLY for remote players
-//      || msg.id !== this._id) return;    // ONLY if the ids match
-
-//     // increase our bomb strength
-//     this.increaseBombStrength(false);
-//     mapCellSet(msg.pos[0], msg.pos[1], ' ');
-// }

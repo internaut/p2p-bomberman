@@ -1,5 +1,5 @@
 /**
- * P2P-Bomberman entity base class.
+ * P2P-Bomberman abstract entity base class.
  * Each visible object that can be attached to the 'ViewClass' must be
  * derived from the 'EntityClass'.
  *
