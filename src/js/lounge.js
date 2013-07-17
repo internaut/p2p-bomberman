@@ -249,10 +249,17 @@ LoungeClass.prototype._playerConnected = function(peerId) {
 LoungeClass.prototype._playerDisconnected = function(peerId) {
 	console.log('player disconnected: ' + peerId);
 
-	// remove the player from the list
-	var playerNameField = $('#playerlist_id_' + peerId);
+	// remove the player from the game
 	if (this._playerManager.playerExists(peerId)) {
+		if (this._playerManager._map && this._playerManager._map._view) {	// also remove the player from the view!
+			this._playerManager._map._view.removeEntity(this._playerManager.getPlayer(peerId));
+		}
+
+		// remove the player from the player manager
 		this._playerManager.removePlayer(peerId);
+
+		// remove the player from the player list
+		var playerNameField = $('#playerlist_id_' + peerId);
 		if (playerNameField) playerNameField.detach();
 	}
 }
