@@ -134,6 +134,7 @@ PlayerManagerClass.prototype._spawnAllPlayersSP = function(spawnPointsCopy) {
     // spawn players
     var i = 0;
     for (var id in this._players) {
+        console.log('spawning player ' + id);
         this.spawnPlayer(this._players[id], spawnPointsCopy[i++]);
     }
 }

@@ -64,6 +64,8 @@ GameClass.prototype.startGame = function() {
 		// init local player 1
 		var player1 = new PlayerClass(PlayerTypeLocalKeyboardArrows);
 		player1.setup(this._view, this._playerManager, null);
+		player1.setId(0);
+		player1.setColor(PlayerColors[0]);
 		this._view.addEntity(player1);
 		this._playerManager.addPlayer(player1);
 
@@ -75,6 +77,8 @@ GameClass.prototype.startGame = function() {
 		// init local player 2
 		var player2 = new PlayerClass(PlayerTypeLocalKeyboardWSAD);
 		player2.setup(this._view, this._playerManager, null);
+		player2.setId(1);
+		player2.setColor(PlayerColors[1]);
 		this._view.addEntity(player2);
 		this._playerManager.addPlayer(player2);
 
