@@ -12,7 +12,7 @@ You can try out the game on a [demostration server](http://demo.hello-it.eu/p2p/
 
 ## Documentation
 
-A comprehensive documentation can be found in the [Wiki](wiki). The source code itself is also well documented.
+A comprehensive documentation can be found in the [Wiki](https://github.com/internaut/p2p-bomberman/wiki). The source code itself is also well documented.
 
 There are also some [slides](https://github.com/internaut/p2p-bomberman/raw/master/_docs/webrtc-mkonrad.pdf) of a presentation that I gave about WebRTC in general and this project as an practical example.
 
