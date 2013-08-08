@@ -6,18 +6,19 @@ This is an implementation of the popular bomberman game for browsers using HTML5
 
 ## Demonstration
 
-(link to demo-server)
+You can try out the game on a [demostration server](http://demo.hello-it.eu/p2p/src/). Just create a new multiplayer game and let other players connect to you, using your *PlayerID*. Of course you can also connect to yourself in a new browser window. Up to 4 players can play in one game.
 
 *Please note:* This is just a showcase. The software contains some bugs as well as WebRTC itself is not fully implemented in the browsers and a lot a features are missing. For example, Firefox and Chrome can still not talk to each other via a `RTCDataChannel`.
 
 ## Documentation
 
-(wiki)
-(presentation)
+A comprehensive documentation can be found in the [Wiki](wiki). The source code itself is also well documented.
+
+There are also some [slides](https://github.com/internaut/p2p-bomberman/raw/master/_docs/webrtc-mkonrad.pdf) of a presentation that I gave about WebRTC in general and this project as an practical example.
 
 ## Setting up a game on your own server
 
-(...)
+*This needs to be added.*
 
 ## License
 
