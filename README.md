@@ -18,7 +18,7 @@ There are also some [slides](https://github.com/internaut/p2p-bomberman/raw/mast
 
 ## Setting up a game on your own server
 
-*This needs to be added.*
+You can easily run this project on your own server. Just load a copy of this project on your server. You should run `make` to generate a minified version of the JavaScript. You also need a peer.js PeerServer. You can either [register for a free cloud-based server on peerjs.com](http://peerjs.com/peerserver) or [run your own server (based on Node.js)](https://github.com/peers/peerjs-server). Then edit `js/conf.js` of P2P-Bomberman to set the proper values for `peerJsHost` and `peerJsPort` and you're ready to go.
 
 ## License
 
